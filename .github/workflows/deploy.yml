@@ -2,7 +2,7 @@ name: Generate Github-Pages
 
 on:
   push:
-    branches: [ fexo ]
+    branches: [ cactus ]
 
 jobs:
   build:
