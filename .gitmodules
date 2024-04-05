@@ -2,3 +2,4 @@
 	path = themes/cactus
 	url = https://github.com/haifuns/hexo-theme-cactus.git
 	branch = master
+	fetch = +refs/heads/*:refs/remotes/origin/*
