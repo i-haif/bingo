@@ -5,8 +5,8 @@
 # Site
 title: haifun's blog
 subtitle:
-description: haifun,后端,JAVA,架构,算法
-keywords:
+description: 
+keywords: 后端,JAVA,架构,算法
 author: haifun
 language: zh-CN
 timezone: ''
@@ -98,7 +98,8 @@ ignore:
 # Extensions
 ## Plugins: https://hexo.io/plugins/
 ## Themes: https://hexo.io/themes/
-theme: fexo
+#theme: fexo
+theme: cactus
 
 # Deployment
 ## Docs: https://hexo.io/docs/one-command-deployment
@@ -121,7 +122,7 @@ leancloud_counter_security:
 
 # https://github.com/next-theme/hexo-filter-mathjax
 mathjax:
-  tags: none # or 'ams' or 'all'
+  tags: all # or 'ams' or 'all'
   single_dollars: true # enable single dollar signs as in-line math delimiters
   cjk_width: 0.9 # relative CJK char width
   normal_width: 0.6 # relative normal (monospace) width

@@ -1,0 +1,3 @@
+[soubmodule "themes/catus"]
+    path = themes/catus
+    url = https://github.com/haifuns/hexo-theme-cactus.git
