@@ -1,3 +1,4 @@
-[soubmodule "themes/catus"]
-    path = themes/catus
-    url = https://github.com/haifuns/hexo-theme-cactus.git
+[submodule "themes/cactus"]
+	path = themes/cactus
+	url = https://github.com/haifuns/hexo-theme-cactus.git
+	branch = master
