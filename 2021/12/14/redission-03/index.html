@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="联锁 MultiLockRedisson提供分布式联锁RedissonMultiLock，可以将多个RLock对象关联为一个联锁，每个RLock对象实例可以来自于不同的Redisson实例。使用方式如下： 123456789RLock lock1 &#x3D; redisson.getLock(&quot;lock1&quot;);RLock lock2 &#x3D; redisson.getLock(&quot;lock2&quot;);RLock lo">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【Redission源码】联锁&amp;红锁源码解析">
+<meta property="og:url" content="https://haifuns.com/2021/12/14/redission-03/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="联锁 MultiLockRedisson提供分布式联锁RedissonMultiLock，可以将多个RLock对象关联为一个联锁，每个RLock对象实例可以来自于不同的Redisson实例。使用方式如下： 123456789RLock lock1 &#x3D; redisson.getLock(&quot;lock1&quot;);RLock lock2 &#x3D; redisson.getLock(&quot;lock2&quot;);RLock lo">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-13T16:15:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="Redission">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【Redission源码】联锁&amp;红锁源码解析</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2021/12/15/redission-04/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2021/12/13/redission-02/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/14/redission-03/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/14/redission-03/&text=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/14/redission-03/&is_video=false&description=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】联锁&amp;红锁源码解析&body=Check out this article: https://haifuns.com/2021/12/14/redission-03/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/14/redission-03/&name=【Redission源码】联锁&amp;红锁源码解析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/14/redission-03/&t=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%81%94%E9%94%81-MultiLock"><span class="toc-number">1.</span> <span class="toc-text">联锁 MultiLock</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E9%94%81"><span class="toc-number">1.1.</span> <span class="toc-text">加锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%8A%E6%94%BE%E9%94%81"><span class="toc-number">1.2.</span> <span class="toc-text">释放锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BA%A2%E9%94%81-RedLock"><span class="toc-number">2.</span> <span class="toc-text">红锁 RedLock</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#RedLock%E7%AE%97%E6%B3%95"><span class="toc-number">2.1.</span> <span class="toc-text">RedLock算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E9%94%81-1"><span class="toc-number">2.1.1.</span> <span class="toc-text">加锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95"><span class="toc-number">2.1.2.</span> <span class="toc-text">失败重试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E9%94%81"><span class="toc-number">2.1.3.</span> <span class="toc-text">解锁</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RedissonRedLock"><span class="toc-number">2.2.</span> <span class="toc-text">RedissonRedLock</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【Redission源码】联锁&amp;红锁源码解析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-12-13T16:15:00.000Z" class="dt-published" itemprop="datePublished">2021-12-14</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">分布式锁</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/Redission/" rel="tag">Redission</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="联锁-MultiLock"><a href="#联锁-MultiLock" class="headerlink" title="联锁 MultiLock"></a>联锁 MultiLock</h1><p>Redisson提供分布式联锁RedissonMultiLock，可以将多个RLock对象关联为一个联锁，每个RLock对象实例可以来自于不同的Redisson实例。使用方式如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">RLock lock1 = redisson.getLock(<span class="string">"lock1"</span>);</span><br><span class="line">RLock lock2 = redisson.getLock(<span class="string">"lock2"</span>);</span><br><span class="line">RLock lock3 = redisson.getLock(<span class="string">"lock3"</span>);</span><br><span class="line"></span><br><span class="line">RedissonMultiLock lock = <span class="keyword">new</span> RedissonMultiLock(lock1, lock2, lock3);</span><br><span class="line"><span class="comment">// 同时加锁：lock1 lock2 lock3</span></span><br><span class="line"><span class="comment">// 所有的锁都上锁成功才算成功。</span></span><br><span class="line">lock.lock();</span><br><span class="line">lock.unlock();</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="加锁"><a href="#加锁" class="headerlink" title="加锁"></a>加锁</h2><p>RedissonMultiLock加锁时默认超时时间为锁个数 * 1.5秒，循环调用每个锁的加锁逻辑，如果加锁失败或者超时，就会把已经加锁成功的所有锁同步等待解锁。实际加锁处理逻辑如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lock</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    lockInterruptibly();</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lockInterruptibly</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>{</span><br><span class="line">    lockInterruptibly(-<span class="number">1</span>, <span class="keyword">null</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">lockInterruptibly</span><span class="params">(<span class="keyword">long</span> leaseTime, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException </span>{</span><br><span class="line">    <span class="comment">// 默认等待时间为每个锁1.5秒</span></span><br><span class="line">    <span class="keyword">long</span> baseWaitTime = locks.size() * <span class="number">1500</span>;</span><br><span class="line">    <span class="keyword">long</span> waitTime = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span> (leaseTime == -<span class="number">1</span>) {</span><br><span class="line">        waitTime = baseWaitTime;</span><br><span class="line">    } <span class="keyword">else</span> {</span><br><span class="line">        <span class="comment">// ...</span></span><br><span class="line">    }</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">while</span> (<span class="keyword">true</span>) {</span><br><span class="line">        <span class="keyword">if</span> (tryLock(waitTime, leaseTime, TimeUnit.MILLISECONDS)) {</span><br><span class="line">            <span class="keyword">return</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">tryLock</span><span class="params">(<span class="keyword">long</span> waitTime, <span class="keyword">long</span> leaseTime, TimeUnit unit)</span> <span class="keyword">throws</span> InterruptedException </span>{</span><br><span class="line">    <span class="keyword">long</span> newLeaseTime = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span> (leaseTime != -<span class="number">1</span>) {</span><br><span class="line">        <span class="keyword">if</span> (waitTime == -<span class="number">1</span>) {</span><br><span class="line">            newLeaseTime = unit.toMillis(leaseTime);</span><br><span class="line">        } <span class="keyword">else</span> {</span><br><span class="line">            newLeaseTime = unit.toMillis(waitTime)*<span class="number">2</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">long</span> time = System.currentTimeMillis();</span><br><span class="line">    <span class="keyword">long</span> remainTime = -<span class="number">1</span>;</span><br><span class="line">    <span class="keyword">if</span> (waitTime != -<span class="number">1</span>) {</span><br><span class="line">        remainTime = unit.toMillis(waitTime);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">long</span> lockWaitTime = calcLockWaitTime(remainTime);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">int</span> failedLocksLimit = failedLocksLimit();</span><br><span class="line">    <span class="comment">// 成功加锁集合</span></span><br><span class="line">    List&lt;RLock&gt; acquiredLocks = <span class="keyword">new</span> ArrayList&lt;&gt;(locks.size());</span><br><span class="line">    <span class="comment">// 遍历所有锁，挨个执行加锁</span></span><br><span class="line">    <span class="keyword">for</span> (ListIterator&lt;RLock&gt; iterator = locks.listIterator(); iterator.hasNext();) {</span><br><span class="line">        RLock lock = iterator.next();</span><br><span class="line">        <span class="keyword">boolean</span> lockAcquired;</span><br><span class="line">        <span class="keyword">try</span> {</span><br><span class="line">            <span class="keyword">if</span> (waitTime == -<span class="number">1</span> &amp;&amp; leaseTime == -<span class="number">1</span>) {</span><br><span class="line">                lockAcquired = lock.tryLock();</span><br><span class="line">            } <span class="keyword">else</span> {</span><br><span class="line">                <span class="comment">// 默认超时时间为锁个数 * 1.5秒，默认不过期</span></span><br><span class="line">                <span class="keyword">long</span> awaitTime = Math.min(lockWaitTime, remainTime);</span><br><span class="line">                lockAcquired = lock.tryLock(awaitTime, newLeaseTime, TimeUnit.MILLISECONDS);</span><br><span class="line">            }</span><br><span class="line">        } <span class="keyword">catch</span> (RedisResponseTimeoutException e) {</span><br><span class="line">            unlockInner(Arrays.asList(lock));</span><br><span class="line">            lockAcquired = <span class="keyword">false</span>;</span><br><span class="line">        } <span class="keyword">catch</span> (Exception e) {</span><br><span class="line">            lockAcquired = <span class="keyword">false</span>;</span><br><span class="line">        }</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (lockAcquired) {</span><br><span class="line">            <span class="comment">// 加锁成功添加到成功集合</span></span><br><span class="line">            acquiredLocks.add(lock);</span><br><span class="line">        } <span class="keyword">else</span> {</span><br><span class="line">            <span class="keyword">if</span> (locks.size() - acquiredLocks.size() == failedLocksLimit()) {</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            }</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 如果不允许失败，并且当前加锁失败了</span></span><br><span class="line">            <span class="keyword">if</span> (failedLocksLimit == <span class="number">0</span>) {</span><br><span class="line">                <span class="comment">// 把所有加锁成功的锁解锁</span></span><br><span class="line">                unlockInner(acquiredLocks);</span><br><span class="line">                <span class="keyword">if</span> (waitTime == -<span class="number">1</span>) {</span><br><span class="line">                    <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">                }</span><br><span class="line">                failedLocksLimit = failedLocksLimit();</span><br><span class="line">                acquiredLocks.clear();</span><br><span class="line">                <span class="comment">// reset iterator</span></span><br><span class="line">                <span class="keyword">while</span> (iterator.hasPrevious()) {</span><br><span class="line">                    iterator.previous();</span><br><span class="line">                }</span><br><span class="line">            } <span class="keyword">else</span> {</span><br><span class="line">                failedLocksLimit--;</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">        </span><br><span class="line">        <span class="keyword">if</span> (remainTime != -<span class="number">1</span>) {</span><br><span class="line">            <span class="comment">// 整个联锁超时时间 = 锁个数 * 1.5秒 - 当前加锁耗费时间</span></span><br><span class="line">            remainTime -= System.currentTimeMillis() - time;</span><br><span class="line">            time = System.currentTimeMillis();</span><br><span class="line"></span><br><span class="line">            <span class="comment">// 如果超时，解锁已经加成功的锁，返回失败</span></span><br><span class="line">            <span class="keyword">if</span> (remainTime &lt;= <span class="number">0</span>) {</span><br><span class="line">                unlockInner(acquiredLocks);</span><br><span class="line">                <span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> (leaseTime != -<span class="number">1</span>) {</span><br><span class="line">        acquiredLocks.stream()</span><br><span class="line">                .map(l -&gt; (RedissonLock) l)</span><br><span class="line">                .map(l -&gt; l.expireAsync(unit.toMillis(leaseTime), TimeUnit.MILLISECONDS))</span><br><span class="line">                .forEach(f -&gt; f.syncUninterruptibly());</span><br><span class="line">    }</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="释放锁"><a href="#释放锁" class="headerlink" title="释放锁"></a>释放锁</h2><p>RedissonMultiLock释放锁逻辑非常简单，循环释放所有锁，同步等待所有锁释放完毕后结束。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">unlock</span><span class="params">()</span> </span>{</span><br><span class="line">    List&lt;RFuture&lt;Void&gt;&gt; futures = <span class="keyword">new</span> ArrayList&lt;&gt;(locks.size());</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (RLock lock : locks) {</span><br><span class="line">        futures.add(lock.unlockAsync());</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> (RFuture&lt;Void&gt; future : futures) {</span><br><span class="line">        future.syncUninterruptibly();</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="红锁-RedLock"><a href="#红锁-RedLock" class="headerlink" title="红锁 RedLock"></a>红锁 RedLock</h1><h2 id="RedLock算法"><a href="#RedLock算法" class="headerlink" title="RedLock算法"></a>RedLock算法</h2><p>由于在Redis主从同步架构中普通锁可能出现安全失效问题，异常场景如下：</p>
+<ol>
+<li>客户端A从master获取到了锁</li>
+<li>在master将锁同步到slave之前，master宕机</li>
+<li>slave节点晋升为master节点</li>
+<li>客户端B获取同一把锁成功</li>
+</ol>
+<p>为了解决以上问题，Redis官方提供了一种RedLock算法。</p>
+<p>RedLock算法假设有N个Redis master节点，这些节点完全独立，不存在主从复制或者其他集群协调机制。</p>
+<h3 id="加锁-1"><a href="#加锁-1" class="headerlink" title="加锁"></a>加锁</h3><p>获取锁步骤如下：</p>
+<ol>
+<li>获取当前时间戳，单位毫秒</li>
+<li>轮流尝试在每个节点使用相同的key和随机值加锁，设定一个小于锁失效时间的超时时间（例如锁自动失效时间为10秒，则超时时间在5-50毫秒之间）</li>
+<li>客户端使用当前时间 - 步骤1获得的时间得到获取锁的使用时间，当且仅当多数节点加锁成功，并且使用时间小于锁失效时间，则加锁成功</li>
+<li>如果加锁成功，锁真正的有效时间 = 过期时间 - 获取锁的使用时间</li>
+<li>如果获取锁失败，客户端应该在所有节点解锁</li>
+</ol>
+<h3 id="失败重试"><a href="#失败重试" class="headerlink" title="失败重试"></a>失败重试</h3><p>当客户端获取锁失败时，需要在一个随机延迟后重试，防止多个客户端同时抢夺同一资源的锁从而造成脑裂都无法获取锁。</p>
+<p>理想情况下，客户端应该并发地向所有节点发送SET命令，以节省加锁耗费的时间，降低脑裂概率。同时，在获取锁失败时，应该尽快释放已经成功取到的锁。</p>
+<h3 id="解锁"><a href="#解锁" class="headerlink" title="解锁"></a>解锁</h3><p>释放锁比较简单，客户端向所有节点发送释放锁命令，不需要关心节点是否已经加锁。</p>
+<h2 id="RedissonRedLock"><a href="#RedissonRedLock" class="headerlink" title="RedissonRedLock"></a>RedissonRedLock</h2><p>RedissonRedLock继承自RedissonMultiLock，区别在于加锁逻辑中的两个变量：允许锁个数 / 2 - 1个锁加锁失败（也即要求多数加锁成功）；每个锁加锁超时时间为1.5秒。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">int</span> <span class="title">failedLocksLimit</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> locks.size() - minLocksAmount(locks);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">int</span> <span class="title">minLocksAmount</span><span class="params">(<span class="keyword">final</span> List&lt;RLock&gt; locks)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> locks.size()/<span class="number">2</span> + <span class="number">1</span>;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">protected</span> <span class="keyword">long</span> <span class="title">calcLockWaitTime</span><span class="params">(<span class="keyword">long</span> remainTime)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> Math.max(remainTime / locks.size(), <span class="number">1</span>);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%81%94%E9%94%81-MultiLock"><span class="toc-number">1.</span> <span class="toc-text">联锁 MultiLock</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E9%94%81"><span class="toc-number">1.1.</span> <span class="toc-text">加锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%8A%E6%94%BE%E9%94%81"><span class="toc-number">1.2.</span> <span class="toc-text">释放锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%BA%A2%E9%94%81-RedLock"><span class="toc-number">2.</span> <span class="toc-text">红锁 RedLock</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#RedLock%E7%AE%97%E6%B3%95"><span class="toc-number">2.1.</span> <span class="toc-text">RedLock算法</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%8A%A0%E9%94%81-1"><span class="toc-number">2.1.1.</span> <span class="toc-text">加锁</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E5%A4%B1%E8%B4%A5%E9%87%8D%E8%AF%95"><span class="toc-number">2.1.2.</span> <span class="toc-text">失败重试</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#%E8%A7%A3%E9%94%81"><span class="toc-number">2.1.3.</span> <span class="toc-text">解锁</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#RedissonRedLock"><span class="toc-number">2.2.</span> <span class="toc-text">RedissonRedLock</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/14/redission-03/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/14/redission-03/&text=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/14/redission-03/&is_video=false&description=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】联锁&amp;红锁源码解析&body=Check out this article: https://haifuns.com/2021/12/14/redission-03/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/14/redission-03/&title=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/14/redission-03/&name=【Redission源码】联锁&amp;红锁源码解析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/14/redission-03/&t=【Redission源码】联锁&amp;红锁源码解析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

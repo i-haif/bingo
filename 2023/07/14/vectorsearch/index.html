@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="随着互联网的不断发展，产生了各种各样的海量数据，比如图片、文本、视频和语音等非结构化数据，这些数据可以通过人工智能技术提取出特征向量，然后通过对这些特征向量的计算和检索来实现对非结构化数据的分析和检索，如何对非结构化的向量数据进行高效检索即为向量检索技术的核心问题。 向量检索的应用场景非常丰富，比如：  推荐系统：广告推荐、猜你喜欢等； 图片识别：以图搜图，通过图片检索图片。具体应用如：车辆检索和">
+<meta property="og:type" content="article">
+<meta property="og:title" content="向量检索技术（了解）">
+<meta property="og:url" content="https://haifuns.com/2023/07/14/vectorsearch/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="随着互联网的不断发展，产生了各种各样的海量数据，比如图片、文本、视频和语音等非结构化数据，这些数据可以通过人工智能技术提取出特征向量，然后通过对这些特征向量的计算和检索来实现对非结构化数据的分析和检索，如何对非结构化的向量数据进行高效检索即为向量检索技术的核心问题。 向量检索的应用场景非常丰富，比如：  推荐系统：广告推荐、猜你喜欢等； 图片识别：以图搜图，通过图片检索图片。具体应用如：车辆检索和">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2023-07-14T04:00:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="向量检索">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>向量检索技术（了解）</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2023/09/11/olap-doris/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2023/06/06/blockchain/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2023/07/14/vectorsearch/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2023/07/14/vectorsearch/&text=向量检索技术（了解）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2023/07/14/vectorsearch/&is_video=false&description=向量检索技术（了解）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=向量检索技术（了解）&body=Check out this article: https://haifuns.com/2023/07/14/vectorsearch/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2023/07/14/vectorsearch/&name=向量检索技术（了解）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2023/07/14/vectorsearch/&t=向量检索技术（了解）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%90%91%E9%87%8F%E8%B7%9D%E7%A6%BB%E8%AE%A1%E7%AE%97"><span class="toc-number">1.</span> <span class="toc-text">向量距离计算</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%AE%E7%82%B9%E5%9E%8B%E5%90%91%E9%87%8F%E8%AE%A1%E7%AE%97%E6%96%B9%E5%BC%8F"><span class="toc-number">1.1.</span> <span class="toc-text">浮点型向量计算方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E5%80%BC%E5%9E%8B%E5%90%91%E9%87%8F%E8%AE%A1%E7%AE%97%E6%96%B9%E5%BC%8F"><span class="toc-number">1.2.</span> <span class="toc-text">二值型向量计算方式</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">基础算法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="toc-number">3.</span> <span class="toc-text">向量数据库</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        向量检索技术（了解）
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2023-07-14T04:00:00.000Z" class="dt-published" itemprop="datePublished">2023-07-14</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2/">向量检索</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/%E5%90%91%E9%87%8F%E6%A3%80%E7%B4%A2/" rel="tag">向量检索</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>随着互联网的不断发展，产生了各种各样的海量数据，比如图片、文本、视频和语音等非结构化数据，这些数据可以通过人工智能技术提取出特征向量，然后通过对这些特征向量的计算和检索来实现对非结构化数据的分析和检索，如何对非结构化的向量数据进行高效检索即为向量检索技术的核心问题。</p>
+<p>向量检索的应用场景非常丰富，比如：</p>
+<ul>
+<li>推荐系统：广告推荐、猜你喜欢等；</li>
+<li>图片识别：以图搜图，通过图片检索图片。具体应用如：车辆检索和商品图片检索等；</li>
+<li>自然语言处理：基于语义的文本检索和推荐，通过文本检索近似文本；</li>
+<li>声纹匹配，音频检索；</li>
+<li>文件去重：通过文件指纹去除重复文件；</li>
+</ul>
+<h1 id="向量距离计算"><a href="#向量距离计算" class="headerlink" title="向量距离计算"></a>向量距离计算</h1><h2 id="浮点型向量计算方式"><a href="#浮点型向量计算方式" class="headerlink" title="浮点型向量计算方式"></a>浮点型向量计算方式</h2><ul>
+<li>内积（IP）/点积（DP）：两个向量在方向上的差异，内积值越大夹角越小越相似。通常用于推荐场景。</li>
+<li>欧式（L2）：两点之间最短的直线距离，距离值越小越相似。能够体现个体数值特征的绝对差异，更多的用于需要从维度的数值大小中体现差异的分析，如使用用户行为指标分析用户价值的相似度或差异。</li>
+<li>曼哈顿（L1）：两个点在标准坐标系上绝对轴距总和。</li>
+<li>余弦（Cosine）：两个向量之间的夹角余弦值，余弦相似度值越大夹角越小越相似。归一化后，内积与余弦相似度计算公式等价。</li>
+</ul>
+<p>余弦距离和内积距离更多的是从方向上区分差异，而对绝对的数值不敏感，更多的用于使用用户对内容评分来区分兴趣的相似度和差异，同时修正了用户间可能存在的度量标准不统一的问题。</p>
+<p>举例：统计两部剧的用户观看行为，用户A的观看向量为(0,1)，用户B为(1,0)；此时二者的余弦距很大，而欧氏距离相对较小；我们分析两个用户对于不同视频的偏好，更关注相对差异，显然应当使用余弦距离或内积距离。</p>
+<h2 id="二值型向量计算方式"><a href="#二值型向量计算方式" class="headerlink" title="二值型向量计算方式"></a>二值型向量计算方式</h2><ul>
+<li>汉明距离（Hamming）：二进制字符串之间的距离。两个等长字符串之间的汉明距离定义为将其中一个变为另外一个所需要作的最小替换次数。</li>
+<li>杰卡德距离（Jaccard）：数据集之间的相似度，计算方式为数据集交集的个数和并集个数的比值。</li>
+<li>谷本距离（Tanimoto）：对于二值变量，谷本系数等价于杰卡德距离。</li>
+</ul>
+<h1 id="基础算法"><a href="#基础算法" class="headerlink" title="基础算法"></a>基础算法</h1><p>向量检索的本质是近似最近邻（ANN，Approximate Nearest Neighbors）搜索，通过尽可能减小查询向量的搜索范围，从而提高查询速度。目前业界的近邻搜索算法主要分为基于树、图、量化和哈希四类。</p>
+<ul>
+<li>基于树<ul>
+<li>KD树</li>
+<li>Annoy</li>
+</ul>
+</li>
+<li>基于图<ul>
+<li>NSW</li>
+<li>HNSW</li>
+</ul>
+</li>
+<li>基于量化<ul>
+<li>SQ</li>
+<li>PQ</li>
+</ul>
+</li>
+<li>基于哈希<ul>
+<li>LSH</li>
+</ul>
+</li>
+</ul>
+<p>KD树（K-dimension tree），每次选择一个维度切割成两个子区域，构建形成树结构，搜索时利用树进行二分查找从而缩小搜索范围。</p>
+<p>Annoy（Approximate Nearest Neighbors Oh Yeah），用超平面把高维空间分割成多个子空间，并把这些子空间以树型结构存储的索引方式。查询时顺着树结构找到距离目标向量较近的一些子空间，然后比较这些子空间里的所有向量。</p>
+<p>K-Means聚类算法，通过不断分类找平均点，直到分类趋于稳定，搜索时只需要找出距离最近的聚类中心，以达到缩小范围的目的。但是会存在遗漏的问题，需要衡量聚类数量。</p>
+<p>导航小世界（NSW，Navigable Small World），图结构建立过程：每次新增向量都和最近的几个向量建立连接。在搜索的过程中按照先粗快后细慢的方式快速导航到目标节点。</p>
+<p>分层的导航小世界（HNSW，Hierarchical Navigable Small World），在NSW的基础上增加多个层级结构，最下层是包含所有节点的图结构，越往上层包含的节点数越少，最上面的节点最稀疏。搜索时上层连线长便于快速导航，下层连线短便于精细化搜索。</p>
+<p>标量量化（ SQ，ScalarQuantization ），将每一个维度量化成指定位数的一个数，比如将32位的int量化成8位的int，通过损失一定的精度，缩减存储和计算成本，比较简单。</p>
+<p>乘积量化（PQ，Produce Quantization），把向量用质心（聚类中心）编码表示，称为量化。质心编码对应一个码本，在高维向量中存在维度灾难问题，码本可能大到不可接受，此时可以先降维，将高维向量先分成多个低纬子向量，然后对每个子向量进行k-means聚类训练。子空间拆分实际上是把聚类数量或者说码本大小的增长从指数模式变成加法模式，从而节省内存。</p>
+<p>位置敏感哈希（LSH，Locality Sensitive Hashing），位置越近或者越相近发生碰撞的概率越高，碰撞的向量放在同一个桶里。搜索时先计算查询向量的哈希值，找到相应的桶，从而实现缩小查询范围。</p>
+<p>其他ANN算法见：<a target="_blank" rel="noopener" href="https://github.com/erikbern/ann-benchmarks">ANN-Benchmark</a></p>
+<h1 id="向量数据库"><a href="#向量数据库" class="headerlink" title="向量数据库"></a>向量数据库</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://milvus.io/">Milvus</a></li>
+<li><a target="_blank" rel="noopener" href="https://www.pinecone.io/">Pinecone</a></li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%90%91%E9%87%8F%E8%B7%9D%E7%A6%BB%E8%AE%A1%E7%AE%97"><span class="toc-number">1.</span> <span class="toc-text">向量距离计算</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%B5%AE%E7%82%B9%E5%9E%8B%E5%90%91%E9%87%8F%E8%AE%A1%E7%AE%97%E6%96%B9%E5%BC%8F"><span class="toc-number">1.1.</span> <span class="toc-text">浮点型向量计算方式</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E5%80%BC%E5%9E%8B%E5%90%91%E9%87%8F%E8%AE%A1%E7%AE%97%E6%96%B9%E5%BC%8F"><span class="toc-number">1.2.</span> <span class="toc-text">二值型向量计算方式</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9F%BA%E7%A1%80%E7%AE%97%E6%B3%95"><span class="toc-number">2.</span> <span class="toc-text">基础算法</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%90%91%E9%87%8F%E6%95%B0%E6%8D%AE%E5%BA%93"><span class="toc-number">3.</span> <span class="toc-text">向量数据库</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2023/07/14/vectorsearch/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2023/07/14/vectorsearch/&text=向量检索技术（了解）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2023/07/14/vectorsearch/&is_video=false&description=向量检索技术（了解）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=向量检索技术（了解）&body=Check out this article: https://haifuns.com/2023/07/14/vectorsearch/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2023/07/14/vectorsearch/&title=向量检索技术（了解）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2023/07/14/vectorsearch/&name=向量检索技术（了解）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2023/07/14/vectorsearch/&t=向量检索技术（了解）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

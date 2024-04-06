@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="堆结构是用数组实现的完全二叉树结构，具体实现：优先级队列PriorityQueue。 完全二叉树中对于任意一个节点index&#x3D;i，满足：  左孩子位置：2 * i + 1 右孩子位置：2 * i + 2 父节点位置：(i - 1) &#x2F; 2  大根堆：完全二叉树中如果每棵子树的最大值都在顶部就是大根堆。小根堆：完全二叉树中如果每棵子树的最小值都在顶部就是小根堆。 大根堆大根堆和小根堆实现方式类似，这">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【算法基础】堆和堆排序">
+<meta property="og:url" content="https://haifuns.com/2022/07/04/algorithm-heapandheapsort/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="堆结构是用数组实现的完全二叉树结构，具体实现：优先级队列PriorityQueue。 完全二叉树中对于任意一个节点index&#x3D;i，满足：  左孩子位置：2 * i + 1 右孩子位置：2 * i + 2 父节点位置：(i - 1) &#x2F; 2  大根堆：完全二叉树中如果每棵子树的最大值都在顶部就是大根堆。小根堆：完全二叉树中如果每棵子树的最小值都在顶部就是小根堆。 大根堆大根堆和小根堆实现方式类似，这">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-07-04T15:30:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.653Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="堆">
+<meta property="article:tag" content="排序">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【算法基础】堆和堆排序</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2022/07/06/algorithm-heapgreater/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2022/06/30/algorithm-quicksort/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&text=【算法基础】堆和堆排序"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&is_video=false&description=【算法基础】堆和堆排序"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【算法基础】堆和堆排序&body=Check out this article: https://haifuns.com/2022/07/04/algorithm-heapandheapsort/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&name=【算法基础】堆和堆排序&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&t=【算法基础】堆和堆排序"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%A7%E6%A0%B9%E5%A0%86"><span class="toc-number">1.</span> <span class="toc-text">大根堆</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A0%86%E6%8E%92%E5%BA%8F"><span class="toc-number">2.</span> <span class="toc-text">堆排序</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%87%A0%E4%B9%8E%E6%9C%89%E5%BA%8F%E7%9A%84%E6%95%B0%E7%BB%84%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98"><span class="toc-number">3.</span> <span class="toc-text">1. 几乎有序的数组排序问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E6%9C%80%E5%A4%A7%E7%BA%BF%E6%AE%B5%E9%87%8D%E5%90%88%E9%97%AE%E9%A2%98"><span class="toc-number">4.</span> <span class="toc-text">2. 最大线段重合问题</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【算法基础】堆和堆排序
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-07-04T15:30:00.000Z" class="dt-published" itemprop="datePublished">2022-07-04</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/%E5%A0%86/" rel="tag">堆</a>, <a class="p-category" href="/tags/%E6%8E%92%E5%BA%8F/" rel="tag">排序</a>, <a class="p-category" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>堆结构是用数组实现的完全二叉树结构，具体实现：优先级队列PriorityQueue。</p>
+<p>完全二叉树中对于任意一个节点index=i，满足：</p>
+<ul>
+<li>左孩子位置：2 * i + 1</li>
+<li>右孩子位置：2 * i + 2</li>
+<li>父节点位置：(i - 1) / 2</li>
+</ul>
+<p>大根堆：完全二叉树中如果每棵子树的最大值都在顶部就是大根堆。<br>小根堆：完全二叉树中如果每棵子树的最小值都在顶部就是小根堆。</p>
+<h1 id="大根堆"><a href="#大根堆" class="headerlink" title="大根堆"></a>大根堆</h1><p>大根堆和小根堆实现方式类似，这里只看大根堆实现：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">public</span> <span class="keyword">static</span> <span class="class"><span class="keyword">class</span> <span class="title">MyMaxHeap</span> </span>{</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span>[] heap;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">final</span> <span class="keyword">int</span> limit;</span><br><span class="line">    <span class="keyword">private</span> <span class="keyword">int</span> heapSize;</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="title">MyMaxHeap</span><span class="params">(<span class="keyword">int</span> limit)</span> </span>{</span><br><span class="line">        heap = <span class="keyword">new</span> <span class="keyword">int</span>[limit];</span><br><span class="line">        <span class="keyword">this</span>.limit = limit;</span><br><span class="line">        heapSize = <span class="number">0</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isEmpty</span><span class="params">()</span> </span>{</span><br><span class="line">        <span class="keyword">return</span> heapSize == <span class="number">0</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">boolean</span> <span class="title">isFull</span><span class="params">()</span> </span>{</span><br><span class="line">        <span class="keyword">return</span> heapSize == limit;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">push</span><span class="params">(<span class="keyword">int</span> value)</span> </span>{</span><br><span class="line">        <span class="keyword">if</span> (heapSize == limit) {</span><br><span class="line">            <span class="keyword">throw</span> <span class="keyword">new</span> RuntimeException(<span class="string">"heap is full"</span>);</span><br><span class="line">        }</span><br><span class="line">        heap[heapSize] = value;</span><br><span class="line">        <span class="comment">// value heapSize</span></span><br><span class="line">        heapInsert(heap, heapSize++);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 返回最大值，并且在大根堆中，把最大值删掉</span></span><br><span class="line">    <span class="comment">// 剩下的数，依然保持大根堆组织</span></span><br><span class="line">    <span class="function"><span class="keyword">public</span> <span class="keyword">int</span> <span class="title">pop</span><span class="params">()</span> </span>{</span><br><span class="line">        <span class="keyword">int</span> ans = heap[<span class="number">0</span>]; <span class="comment">// 最大值</span></span><br><span class="line">        swap(heap, <span class="number">0</span>, --heapSize); <span class="comment">// 交换最后位置的值和最大值</span></span><br><span class="line">        heapify(heap, <span class="number">0</span>, heapSize); <span class="comment">// 最后的值在0位置，从0出发重新构建堆</span></span><br><span class="line">        <span class="keyword">return</span> ans;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 插入操作</span></span><br><span class="line">    <span class="comment">// 新加进来的数，现在停在了index位置</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">heapInsert</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> index)</span> </span>{</span><br><span class="line">        <span class="comment">// [index] [(index-1)/2]</span></span><br><span class="line">        <span class="comment">// index == 0</span></span><br><span class="line">        <span class="keyword">while</span> (arr[index] &gt; arr[(index - <span class="number">1</span>) / <span class="number">2</span>]) { <span class="comment">// 如果大于父节点</span></span><br><span class="line">            swap(arr, index, (index - <span class="number">1</span>) / <span class="number">2</span>); <span class="comment">// 跟父节点交换</span></span><br><span class="line">            index = (index - <span class="number">1</span>) / <span class="number">2</span>; <span class="comment">// 更新位置</span></span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 从index位置，往下看，不断的下沉</span></span><br><span class="line">    <span class="comment">// 停：较大的孩子都不再比index位置的数大；已经没孩子了</span></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">heapify</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> index, <span class="keyword">int</span> heapSize)</span> </span>{</span><br><span class="line">        <span class="keyword">int</span> left = index * <span class="number">2</span> + <span class="number">1</span>; <span class="comment">// 左孩子位置</span></span><br><span class="line">        <span class="keyword">while</span> (left &lt; heapSize) { <span class="comment">// 如果有左孩子，有没有右孩子，可能有可能没有！</span></span><br><span class="line">            <span class="comment">// 把较大孩子的下标，给largest</span></span><br><span class="line">            <span class="keyword">int</span> largest = left + <span class="number">1</span> &lt; heapSize &amp;&amp; arr[left + <span class="number">1</span>] &gt; arr[left] ? left + <span class="number">1</span> : left;</span><br><span class="line">            largest = arr[largest] &gt; arr[index] ? largest : index;</span><br><span class="line">            <span class="keyword">if</span> (largest == index) {</span><br><span class="line">                <span class="keyword">break</span>;</span><br><span class="line">            }</span><br><span class="line">            <span class="comment">// index和较大孩子，要互换</span></span><br><span class="line">            swap(arr, largest, index);</span><br><span class="line">            index = largest;</span><br><span class="line">            left = index * <span class="number">2</span> + <span class="number">1</span>;</span><br><span class="line">        }</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="function"><span class="keyword">private</span> <span class="keyword">void</span> <span class="title">swap</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> i, <span class="keyword">int</span> j)</span> </span>{</span><br><span class="line">        <span class="keyword">int</span> tmp = arr[i];</span><br><span class="line">        arr[i] = arr[j];</span><br><span class="line">        arr[j] = tmp;</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="堆排序"><a href="#堆排序" class="headerlink" title="堆排序"></a>堆排序</h1><p>堆排序思想：</p>
+<ol>
+<li>先让整个数组变成大根堆结构，建堆过程：<br> a. 从上到下的方法，时间复杂度O(N*logN)<br> b. 从下到上的方法，时间复杂度O(N)</li>
+<li>把堆的最大值和堆末尾的值交换，减少堆的大小并重新调整堆，循环操作，时间复杂度O(N*logN)</li>
+<li>堆的大小减小到0时，排序完成</li>
+</ol>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 堆排序额外空间复杂度O(1)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">heapSort</span><span class="params">(<span class="keyword">int</span>[] arr)</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (arr == <span class="keyword">null</span> || arr.length &lt; <span class="number">2</span>) {</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第一种方式构建大根堆，从上到下</span></span><br><span class="line">    <span class="comment">// O(N*logN)</span></span><br><span class="line">    <span class="comment">// for (int i = 0; i &lt; arr.length; i++) {</span></span><br><span class="line">    <span class="comment">// heapInsert(arr, i);</span></span><br><span class="line">    <span class="comment">// }</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// 第二种方式构建大根堆，从下到上</span></span><br><span class="line">    <span class="comment">// O(N)</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = arr.length - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) {</span><br><span class="line">        heapify(arr, i, arr.length);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">int</span> heapSize = arr.length;</span><br><span class="line">    swap(arr, <span class="number">0</span>, --heapSize); <span class="comment">// 交换0位置最大值到大根堆最后</span></span><br><span class="line"></span><br><span class="line">    <span class="comment">// O(N*logN)</span></span><br><span class="line">    <span class="keyword">while</span> (heapSize &gt; <span class="number">0</span>) { <span class="comment">// O(N)</span></span><br><span class="line">        heapify(arr, <span class="number">0</span>, heapSize); <span class="comment">// O(logN)</span></span><br><span class="line">        swap(arr, <span class="number">0</span>, --heapSize); <span class="comment">// O(1)</span></span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// arr[index]位置的数，往上移动</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">heapInsert</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> index)</span> </span>{</span><br><span class="line">    <span class="keyword">while</span> (arr[index] &gt; arr[(index - <span class="number">1</span>) / <span class="number">2</span>]) {</span><br><span class="line">        swap(arr, index, (index - <span class="number">1</span>) / <span class="number">2</span>);</span><br><span class="line">        index = (index - <span class="number">1</span>) / <span class="number">2</span>;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// arr[index]位置的数，往下移动</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">heapify</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> index, <span class="keyword">int</span> heapSize)</span> </span>{</span><br><span class="line">    <span class="keyword">int</span> left = index * <span class="number">2</span> + <span class="number">1</span>; <span class="comment">// 左孩子的下标</span></span><br><span class="line">    <span class="keyword">while</span> (left &lt; heapSize) { <span class="comment">// 下方还有孩子的时候</span></span><br><span class="line">        <span class="comment">// 两个孩子中，谁的值大，把下标给largest</span></span><br><span class="line">        <span class="comment">// 1) 只有左孩子，left -&gt; largest</span></span><br><span class="line">        <span class="comment">// 2) 同时有左孩子和右孩子，右孩子的值 &lt;= 左孩子的值，left -&gt; largest</span></span><br><span class="line">        <span class="comment">// 3) 同时有左孩子和右孩子并且右孩子的值 &gt; 左孩子的值， right -&gt; largest</span></span><br><span class="line">        <span class="keyword">int</span> largest = left + <span class="number">1</span> &lt; heapSize &amp;&amp; arr[left + <span class="number">1</span>] &gt; arr[left] ? left + <span class="number">1</span> : left;</span><br><span class="line">        <span class="comment">// 父和较大的孩子之间，谁的值大，把下标给largest</span></span><br><span class="line">        largest = arr[largest] &gt; arr[index] ? largest : index;</span><br><span class="line">        <span class="keyword">if</span> (largest == index) {</span><br><span class="line">            <span class="keyword">break</span>;</span><br><span class="line">        }</span><br><span class="line">        swap(arr, largest, index);</span><br><span class="line">        index = largest;</span><br><span class="line">        left = index * <span class="number">2</span> + <span class="number">1</span>;</span><br><span class="line">    }</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">swap</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> i, <span class="keyword">int</span> j)</span> </span>{</span><br><span class="line">    <span class="keyword">int</span> tmp = arr[i];</span><br><span class="line">    arr[i] = arr[j];</span><br><span class="line">    arr[j] = tmp;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="1-几乎有序的数组排序问题"><a href="#1-几乎有序的数组排序问题" class="headerlink" title="1. 几乎有序的数组排序问题"></a>1. 几乎有序的数组排序问题</h1><p>已知一个几乎有序的数组，几乎有序指如果把数组排好序的话，每个元素移动的距离一定不超过K，并且K相对于数组长度来说是比较小的。<br>选择一种合适的排序策略，对这个数组进行排序。</p>
+<p>思路：利用小根堆，小根堆大小为K，保持K个数放到小根堆里，弹出最小值就是当前堆+剩余数中的最小</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// O(N*logK)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">void</span> <span class="title">sortedArrDistanceLessK</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> k)</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (k == <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    }</span><br><span class="line">    <span class="comment">// 默认小根堆</span></span><br><span class="line">    PriorityQueue&lt;Integer&gt; heap = <span class="keyword">new</span> PriorityQueue&lt;&gt;();</span><br><span class="line">    <span class="keyword">int</span> index = <span class="number">0</span>;</span><br><span class="line">    <span class="comment">// 0...K-1</span></span><br><span class="line">    <span class="keyword">for</span> (; index &lt;= Math.min(arr.length - <span class="number">1</span>, k - <span class="number">1</span>); index++) {</span><br><span class="line">        heap.add(arr[index]);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">int</span> i = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (; index &lt; arr.length; i++, index++) {</span><br><span class="line">        heap.add(arr[index]);</span><br><span class="line">        arr[i] = heap.poll();</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">while</span> (!heap.isEmpty()) {</span><br><span class="line">        arr[i++] = heap.poll();</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="2-最大线段重合问题"><a href="#2-最大线段重合问题" class="headerlink" title="2. 最大线段重合问题"></a>2. 最大线段重合问题</h1><p>给定很多线段，线段用[start,end]表示线段开始和结束位置，左右都是闭区间。</p>
+<p>规定：</p>
+<ol>
+<li>线段的开始和结束位置一定是整数值</li>
+<li>线段重合区域的长度一定&gt;=1</li>
+</ol>
+<p>要求返回最多重合区域中，包含了几段线段。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 暴力方法 O((max - min) * N)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">maxCover1</span><span class="params">(<span class="keyword">int</span>[][] lines)</span> </span>{</span><br><span class="line">    <span class="keyword">int</span> min = Integer.MAX_VALUE; <span class="comment">// 所有线段最小值</span></span><br><span class="line">    <span class="keyword">int</span> max = Integer.MIN_VALUE; <span class="comment">// 所有线段最大值</span></span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; lines.length; i++) {</span><br><span class="line">        min = Math.min(min, lines[i][<span class="number">0</span>]);</span><br><span class="line">        max = Math.max(max, lines[i][<span class="number">1</span>]);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">int</span> cover = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">double</span> p = min + <span class="number">0.5</span>; p &lt; max; p += <span class="number">1</span>) { <span class="comment">// 每0.5统计在范围内的线段数</span></span><br><span class="line">        <span class="keyword">int</span> cur = <span class="number">0</span>; <span class="comment">// 包含当前0.5的线段数</span></span><br><span class="line">        <span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt; lines.length; i++) {</span><br><span class="line">            <span class="keyword">if</span> (lines[i][<span class="number">0</span>] &lt; p &amp;&amp; lines[i][<span class="number">1</span>] &gt; p) {</span><br><span class="line">                cur++;</span><br><span class="line">            }</span><br><span class="line">        }</span><br><span class="line">        cover = Math.max(cover, cur); <span class="comment">// 重合最多的0.5对应的线段数量</span></span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> cover;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// 堆实现 O(N*logN)</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">maxCover2</span><span class="params">(<span class="keyword">int</span>[][] m)</span> </span>{</span><br><span class="line">    <span class="comment">// 先按照线段左位置start排序</span></span><br><span class="line">    Arrays.sort(m, (a, b) -&gt; (a[<span class="number">0</span>] - b[<span class="number">0</span>]));</span><br><span class="line">    <span class="comment">// 准备好小根堆</span></span><br><span class="line">    PriorityQueue&lt;Integer&gt; heap = <span class="keyword">new</span> PriorityQueue&lt;&gt;();</span><br><span class="line">    <span class="keyword">int</span> max = <span class="number">0</span>;</span><br><span class="line">    <span class="keyword">for</span> (<span class="keyword">int</span>[] line : m) {</span><br><span class="line">        <span class="keyword">while</span> (!heap.isEmpty() &amp;&amp; heap.peek() &lt;= line[<span class="number">0</span>]) {</span><br><span class="line">            heap.poll(); <span class="comment">// 弹出所有小于start的数</span></span><br><span class="line">        }</span><br><span class="line">        heap.add(line[<span class="number">1</span>]); <span class="comment">// end加入小根堆</span></span><br><span class="line">        max = Math.max(max, heap.size()); <span class="comment">// 小根堆里剩下的是跟当前线段重合的线段数量</span></span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> max;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A4%A7%E6%A0%B9%E5%A0%86"><span class="toc-number">1.</span> <span class="toc-text">大根堆</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%A0%86%E6%8E%92%E5%BA%8F"><span class="toc-number">2.</span> <span class="toc-text">堆排序</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E5%87%A0%E4%B9%8E%E6%9C%89%E5%BA%8F%E7%9A%84%E6%95%B0%E7%BB%84%E6%8E%92%E5%BA%8F%E9%97%AE%E9%A2%98"><span class="toc-number">3.</span> <span class="toc-text">1. 几乎有序的数组排序问题</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E6%9C%80%E5%A4%A7%E7%BA%BF%E6%AE%B5%E9%87%8D%E5%90%88%E9%97%AE%E9%A2%98"><span class="toc-number">4.</span> <span class="toc-text">2. 最大线段重合问题</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&text=【算法基础】堆和堆排序"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&is_video=false&description=【算法基础】堆和堆排序"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【算法基础】堆和堆排序&body=Check out this article: https://haifuns.com/2022/07/04/algorithm-heapandheapsort/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&title=【算法基础】堆和堆排序"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&name=【算法基础】堆和堆排序&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2022/07/04/algorithm-heapandheapsort/&t=【算法基础】堆和堆排序"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

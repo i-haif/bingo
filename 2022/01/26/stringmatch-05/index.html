@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Trie树在了解AC自动机前需要先简单了解一下Trie树：Trie树也称为字典树、前缀树，是一种常被用于词检索的树结构。其思想非常简单：利用词的共同前缀以达到节省空间的目的。基本实现有array和linked-list两种。 以bachelor, baby, badge, jar四个单词构成的Trie树为例，array实现需要为每一个字符开辟一个字母表大小的数据，如下图所示：  array实现的t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【字符串匹配】AC自动机">
+<meta property="og:url" content="https://haifuns.com/2022/01/26/stringmatch-05/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="Trie树在了解AC自动机前需要先简单了解一下Trie树：Trie树也称为字典树、前缀树，是一种常被用于词检索的树结构。其思想非常简单：利用词的共同前缀以达到节省空间的目的。基本实现有array和linked-list两种。 以bachelor, baby, badge, jar四个单词构成的Trie树为例，array实现需要为每一个字符开辟一个字母表大小的数据，如下图所示：  array实现的t">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/trie-array.png">
+<meta property="og:image" content="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/trie-linkedlist.png">
+<meta property="og:image" content="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/Aho-Corasick.png">
+<meta property="article:published_time" content="2022-01-26T12:00:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="文本匹配">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/trie-array.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【字符串匹配】AC自动机</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2022/02/15/zookeeper-01/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2022/01/10/stringmatch-04/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2022/01/26/stringmatch-05/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2022/01/26/stringmatch-05/&text=【字符串匹配】AC自动机"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2022/01/26/stringmatch-05/&is_video=false&description=【字符串匹配】AC自动机"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【字符串匹配】AC自动机&body=Check out this article: https://haifuns.com/2022/01/26/stringmatch-05/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2022/01/26/stringmatch-05/&name=【字符串匹配】AC自动机&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2022/01/26/stringmatch-05/&t=【字符串匹配】AC自动机"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Trie%E6%A0%91"><span class="toc-number">1.</span> <span class="toc-text">Trie树</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#AC%E8%87%AA%E5%8A%A8%E6%9C%BA"><span class="toc-number">2.</span> <span class="toc-text">AC自动机</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="toc-number">2.1.</span> <span class="toc-text">构建过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#goto%E8%A1%A8"><span class="toc-number">2.1.1.</span> <span class="toc-text">goto表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#failure%E8%A1%A8"><span class="toc-number">2.1.2.</span> <span class="toc-text">failure表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#output%E8%A1%A8"><span class="toc-number">2.1.3.</span> <span class="toc-text">output表</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%8C%E6%95%B0%E7%BB%84Trie%E6%A0%91"><span class="toc-number">3.</span> <span class="toc-text">双数组Trie树</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B%EF%BC%88darts-java%E5%AE%9E%E7%8E%B0%EF%BC%89"><span class="toc-number">3.1.</span> <span class="toc-text">构建过程（darts-java实现）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E7%BC%80%E6%9F%A5%E8%AF%A2"><span class="toc-number">3.2.</span> <span class="toc-text">前缀查询</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#AC%E8%87%AA%E5%8A%A8%E6%9C%BA%EF%BC%88%E5%8F%8C%E6%95%B0%E7%BB%84Trie%E6%A0%91%E5%AE%9E%E7%8E%B0%EF%BC%89"><span class="toc-number">4.</span> <span class="toc-text">AC自动机（双数组Trie树实现）</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【字符串匹配】AC自动机
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-01-26T12:00:00.000Z" class="dt-published" itemprop="datePublished">2022-01-26</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/%E6%96%87%E6%9C%AC%E5%8C%B9%E9%85%8D/" rel="tag">文本匹配</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="Trie树"><a href="#Trie树" class="headerlink" title="Trie树"></a>Trie树</h1><p>在了解AC自动机前需要先简单了解一下Trie树：Trie树也称为字典树、前缀树，是一种常被用于词检索的树结构。其思想非常简单：利用词的共同前缀以达到节省空间的目的。基本实现有array和linked-list两种。</p>
+<p>以bachelor, baby, badge, jar四个单词构成的Trie树为例，array实现需要为每一个字符开辟一个字母表大小的数据，如下图所示：</p>
+<p><img src="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/trie-array.png" alt="trie array实现"></p>
+<p>array实现的trie树查询时间复杂度为O(n)，但是存在大量的空间浪费。linked-list实现避免了空间浪费，却增加了查询时的复杂度（公共前缀需要回溯），如下图所示：</p>
+<p><img src="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/trie-linkedlist.png" alt="trie linked-list实现"></p>
+<h1 id="AC自动机"><a href="#AC自动机" class="headerlink" title="AC自动机"></a>AC自动机</h1><p>AC自动机通过将模式串预处理为确定有限状态自动机，扫描文本一遍就能结束，匹配复杂度为O(n)。</p>
+<p>AC自动机包含三个核心函数：</p>
+<ul>
+<li>success，成功转移到另一个状态，也称为goto表或success表</li>
+<li>failure，如果不能成功转移则跳转到一个特定的节点，也称为failure表</li>
+<li>emits，命中一个模式串，也称为output表</li>
+</ul>
+<p>以文本“ushers”，模式串“he”、“she”、“his”、“hers”为例，构建的自动机如下图所示：</p>
+<p><img src="https://haif-cloud.oss-cn-beijing.aliyuncs.com/algorithm/stringmatch/Aho-Corasick.png" alt="image"></p>
+<p>匹配过程：</p>
+<ol>
+<li>接收到字符u，首先尝试按照success表转移（图中实线），没有相应路线，转移失败</li>
+<li>按照failure表回去（图中虚线），继续接收到一个字符s，转移到状态3，然后继续按照success表转移</li>
+<li>直到失败跳转重新跳转到步骤2，或者遇到output表中标明“可输出状态”输出匹配到的字符串，然后将此状态视作普通状态继续转移</li>
+</ol>
+<p>AC自动机高效之处在于在接受了“ushe”之后，再接受一个r导致无法按照success表继续转移，此时自动机按照failure表转移到2状态，然后再转移两次就能输出“hers”，整个匹配过程就好像没有失败过。</p>
+<h2 id="构建过程"><a href="#构建过程" class="headerlink" title="构建过程"></a>构建过程</h2><h3 id="goto表"><a href="#goto表" class="headerlink" title="goto表"></a>goto表</h3><p>goto表本质上就是一颗Trie树，其构建过程就是Trie树的构建过程。</p>
+<h3 id="failure表"><a href="#failure表" class="headerlink" title="failure表"></a>failure表</h3><p>failure表是状态与状态的一对一关系，如示例中的虚线部分，构造方法如下：</p>
+<ol>
+<li>首先规定与状态0距离为1的所有fail值为0</li>
+<li>假设当前状态是S1，S1前一个状态是S2，S2转换到S1接受字符为C即S1 = goto(S2, C)。fail(S1)求值方法为：测试goto(fail(S2)，C)<ul>
+<li>如果成功，fail(S1) = goto(fail(S2), C)</li>
+<li>如果失败，继续测试goto(fail(fail(S2))，C)，如此重复直到测试成功后赋值给fail(S1)</li>
+</ul>
+</li>
+</ol>
+<h3 id="output表"><a href="#output表" class="headerlink" title="output表"></a>output表</h3><p>output表在构建goto表和failure表的同时创建，例如示例中5 {she, he}，在创建goto表时类似Trie树里表示是否是单词结尾的结构，构建failure表时进行拓展。</p>
+<h1 id="双数组Trie树"><a href="#双数组Trie树" class="headerlink" title="双数组Trie树"></a>双数组Trie树</h1><p>双数组trie树是一种空间复杂度低的Trie树，应用于字符区间大的语言（中文、日文等）分词领域，其本身并不保存树，而是在构建树过程维护base、check双数组，双数组信息足以表示整棵树。</p>
+<p>base数组是goto表的array实现，check数组验证转移的有效性。以状态t接受字符c转移到状态tc为例，双数组满足以下转移方程：</p>
+<ul>
+<li>base[t] + c = tc</li>
+<li>check[tc] = t</li>
+</ul>
+<h2 id="构建过程（darts-java实现）"><a href="#构建过程（darts-java实现）" class="headerlink" title="构建过程（darts-java实现）"></a>构建过程（<a target="_blank" rel="noopener" href="https://github.com/komiya-atsushi/darts-java">darts-java实现</a>）</h2><ol>
+<li>初始化root节点base[0] = 1; check[0] = 0</li>
+<li>对于每一群兄弟节点，寻找一个begin值使得check[begin+a1]、check[begin+a2]、…、check[begin+an]都等于0，也就是找到n个空闲空间</li>
+<li>设置check[begin+an]=begin</li>
+<li>对于每个兄弟节点，如果没有子节点（即叶子节点），令其base为负值。否则设置base为begin，同时插入子节点，执行步骤2</li>
+</ol>
+<h2 id="前缀查询"><a href="#前缀查询" class="headerlink" title="前缀查询"></a>前缀查询</h2><p>定义当前状态p = base[0] = 1，依次读取字符串，如果base[p] = check[base[p]] &amp;&amp; base[base[p]] &lt; 0则查到一个词。</p>
+<p>然后状态转移，增加一个字符，p = base[char[i-1]] + char[i] + 1</p>
+<h1 id="AC自动机（双数组Trie树实现）"><a href="#AC自动机（双数组Trie树实现）" class="headerlink" title="AC自动机（双数组Trie树实现）"></a>AC自动机（双数组Trie树实现）</h1><p>AC自动机能够高速完成多模式匹配，其最终性能高低取决于具体实现，大部分实现都是使用一个Map&lt;Character,State&gt;，当字符区间大时其巨额空间复杂度与哈希函数性能消耗会降低整体性能。</p>
+<p>双数组Trie树能在O(n)时间内完成单串匹配，并且内存消耗可控。然而如果要匹配多个模式串必须先实现前缀查询，然后频繁截取文本后缀才可以多匹配，文本需要回退扫描多遍，性能极低。</p>
+<p>hankcs开源的<a target="_blank" rel="noopener" href="https://github.com/hankcs/AhoCorasickDoubleArrayTrie">AhoCorasickDoubleArrayTrie</a>类库结合了双数组trie树和AC自动机的优点，得到了一种近乎完美的数据结构。</p>
+<ul>
+<li><a target="_blank" rel="noopener" href="https://www.cnblogs.com/en-heng/p/6265256.html">双数组字典树</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.hankcs.com/program/algorithm/implementation-and-analysis-of-aho-corasick-algorithm-in-java.html">Aho-Corasick算法的Java实现与分析</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.hankcs.com/program/java/%e5%8f%8c%e6%95%b0%e7%bb%84trie%e6%a0%91doublearraytriejava%e5%ae%9e%e7%8e%b0.html">双数组Trie树(DoubleArrayTrie)Java实现</a></li>
+<li><a target="_blank" rel="noopener" href="http://www.hankcs.com/program/algorithm/aho-corasick-double-array-trie.html">Aho Corasick自动机结合DoubleArrayTrie极速多模式匹配</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/komiya-atsushi/darts-java">双数组trie开源代码</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/hankcs/aho-corasick">Aho-Corasick开源代码</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/hankcs/AhoCorasickDoubleArrayTrie">双数组Trie树实现Aho-Corasick开源代码</a></li>
+</ul>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Trie%E6%A0%91"><span class="toc-number">1.</span> <span class="toc-text">Trie树</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#AC%E8%87%AA%E5%8A%A8%E6%9C%BA"><span class="toc-number">2.</span> <span class="toc-text">AC自动机</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B"><span class="toc-number">2.1.</span> <span class="toc-text">构建过程</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#goto%E8%A1%A8"><span class="toc-number">2.1.1.</span> <span class="toc-text">goto表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#failure%E8%A1%A8"><span class="toc-number">2.1.2.</span> <span class="toc-text">failure表</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#output%E8%A1%A8"><span class="toc-number">2.1.3.</span> <span class="toc-text">output表</span></a></li></ol></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%8C%E6%95%B0%E7%BB%84Trie%E6%A0%91"><span class="toc-number">3.</span> <span class="toc-text">双数组Trie树</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9E%84%E5%BB%BA%E8%BF%87%E7%A8%8B%EF%BC%88darts-java%E5%AE%9E%E7%8E%B0%EF%BC%89"><span class="toc-number">3.1.</span> <span class="toc-text">构建过程（darts-java实现）</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%89%8D%E7%BC%80%E6%9F%A5%E8%AF%A2"><span class="toc-number">3.2.</span> <span class="toc-text">前缀查询</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#AC%E8%87%AA%E5%8A%A8%E6%9C%BA%EF%BC%88%E5%8F%8C%E6%95%B0%E7%BB%84Trie%E6%A0%91%E5%AE%9E%E7%8E%B0%EF%BC%89"><span class="toc-number">4.</span> <span class="toc-text">AC自动机（双数组Trie树实现）</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2022/01/26/stringmatch-05/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2022/01/26/stringmatch-05/&text=【字符串匹配】AC自动机"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2022/01/26/stringmatch-05/&is_video=false&description=【字符串匹配】AC自动机"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【字符串匹配】AC自动机&body=Check out this article: https://haifuns.com/2022/01/26/stringmatch-05/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2022/01/26/stringmatch-05/&title=【字符串匹配】AC自动机"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2022/01/26/stringmatch-05/&name=【字符串匹配】AC自动机&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2022/01/26/stringmatch-05/&t=【字符串匹配】AC自动机"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

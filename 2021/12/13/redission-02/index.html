@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Redission提供RedissonFairLock实现公平锁，使用方式如下： 123RLock fairLock &#x3D; redisson.getFairLock(&quot;anyLock&quot;);fairLock.lock();fairLock.unlock();  RedissionFairLock可以保证当多个Residdion客户端线程同时请求加锁时，优先分配给先发起请求的线程。所有请求线程会在一个队">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【Redission源码】公平锁源码解析">
+<meta property="og:url" content="https://haifuns.com/2021/12/13/redission-02/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="Redission提供RedissonFairLock实现公平锁，使用方式如下： 123RLock fairLock &#x3D; redisson.getFairLock(&quot;anyLock&quot;);fairLock.lock();fairLock.unlock();  RedissionFairLock可以保证当多个Residdion客户端线程同时请求加锁时，优先分配给先发起请求的线程。所有请求线程会在一个队">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-12T16:15:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="Redission">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【Redission源码】公平锁源码解析</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2021/12/14/redission-03/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2021/12/11/redission-01/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/13/redission-02/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/13/redission-02/&text=【Redission源码】公平锁源码解析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/13/redission-02/&is_video=false&description=【Redission源码】公平锁源码解析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】公平锁源码解析&body=Check out this article: https://haifuns.com/2021/12/13/redission-02/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/13/redission-02/&name=【Redission源码】公平锁源码解析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/13/redission-02/&t=【Redission源码】公平锁源码解析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8E%92%E9%98%9F%E5%8A%A0%E9%94%81"><span class="toc-number">1.</span> <span class="toc-text">排队加锁</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8A%A0%E9%94%81"><span class="toc-number">2.</span> <span class="toc-text">可重入加锁</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B6%85%E6%97%B6%E9%87%8D%E6%96%B0%E5%85%A5%E9%98%9F"><span class="toc-number">3.</span> <span class="toc-text">超时重新入队</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%87%8A%E6%94%BE%E9%94%81"><span class="toc-number">4.</span> <span class="toc-text">释放锁</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【Redission源码】公平锁源码解析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-12-12T16:15:00.000Z" class="dt-published" itemprop="datePublished">2021-12-13</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">分布式锁</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/Redission/" rel="tag">Redission</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>Redission提供RedissonFairLock实现公平锁，使用方式如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">RLock fairLock = redisson.getFairLock(<span class="string">"anyLock"</span>);</span><br><span class="line">fairLock.lock();</span><br><span class="line">fairLock.unlock();</span><br></pre></td></tr></tbody></table></figure>
+
+<p>RedissionFairLock可以保证当多个Residdion客户端线程同时请求加锁时，优先分配给先发起请求的线程。所有请求线程会在一个队列中排队，当某个线程宕机时，Redission会等待5秒后继续下一个线程。也就是说如果前面有5个线程都处于等待状态，那么后面的线程会等待至少25秒。</p>
+<h1 id="排队加锁"><a href="#排队加锁" class="headerlink" title="排队加锁"></a>排队加锁</h1><p>RedissionFairLock继承自RedissionLock，加锁逻辑中重写了#tryLockInnerAsync方法，加锁lua有所不同，除了hash存放锁外，还存在一个list结构存在等待队列，一个zset结构存在等待队列timeout时间。详细处理如下所示：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br></pre></td><td class="code"><pre><span class="line">&lt;T&gt; <span class="function">RFuture&lt;T&gt; <span class="title">tryLockInnerAsync</span><span class="params">(<span class="keyword">long</span> waitTime, <span class="keyword">long</span> leaseTime, TimeUnit unit, <span class="keyword">long</span> threadId, RedisStrictCommand&lt;T&gt; command)</span> </span>{</span><br><span class="line">    <span class="keyword">long</span> wait = threadWaitTime;</span><br><span class="line">    <span class="keyword">if</span> (waitTime != -<span class="number">1</span>) {</span><br><span class="line">        wait = unit.toMillis(waitTime);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">long</span> currentTime = System.currentTimeMillis();</span><br><span class="line">    </span><br><span class="line">    <span class="comment">// ...</span></span><br><span class="line">    </span><br><span class="line">    <span class="keyword">if</span> (command == RedisCommands.EVAL_LONG) {</span><br><span class="line">        <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,</span><br><span class="line">                <span class="comment">// remove stale threads</span></span><br><span class="line">                <span class="string">"while true do "</span> +</span><br><span class="line">                    <span class="comment">// 从等待队列redisson_lock_queue:{锁名}中获取第1个元素</span></span><br><span class="line">                    <span class="string">"local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"</span> +</span><br><span class="line">                    <span class="comment">// 如果没有排队加锁的线程，就跳出循环执行加锁逻辑</span></span><br><span class="line">                    <span class="string">"if firstThreadId2 == false then "</span> +</span><br><span class="line">                        <span class="string">"break;"</span> +</span><br><span class="line">                    <span class="string">"end;"</span> +</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// 获取当前线程剩余超时时间</span></span><br><span class="line">                    <span class="string">"local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"</span> +</span><br><span class="line">                    <span class="comment">// 如果超时时间小于当前时间，那么直接移除当前等待的线程</span></span><br><span class="line">                    <span class="string">"if timeout &lt;= tonumber(ARGV[4]) then "</span> +</span><br><span class="line">                        <span class="comment">// remove the item from the queue and timeout set</span></span><br><span class="line">                        <span class="comment">// NOTE we do not alter any other timeout</span></span><br><span class="line">                        <span class="string">"redis.call('zrem', KEYS[3], firstThreadId2);"</span> +</span><br><span class="line">                        <span class="string">"redis.call('lpop', KEYS[2]);"</span> +</span><br><span class="line">                    <span class="string">"else "</span> +</span><br><span class="line">                        <span class="string">"break;"</span> +</span><br><span class="line">                    <span class="string">"end;"</span> +</span><br><span class="line">                <span class="string">"end;"</span> +</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 如果锁不存在或者队列redisson_lock_queue:{锁名}不存在或者队列中第一个元素是uuid:threadId</span></span><br><span class="line">                <span class="comment">// check if the lock can be acquired now</span></span><br><span class="line">                <span class="string">"if (redis.call('exists', KEYS[1]) == 0) "</span> +</span><br><span class="line">                    <span class="string">"and ((redis.call('exists', KEYS[2]) == 0) "</span> +</span><br><span class="line">                        <span class="string">"or (redis.call('lindex', KEYS[2], 0) == ARGV[2])) then "</span> +</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// remove this thread from the queue and timeout set</span></span><br><span class="line">                    <span class="comment">// 从redisson_lock_queue:{锁名}中移除第一个元素</span></span><br><span class="line">                    <span class="string">"redis.call('lpop', KEYS[2]);"</span> +</span><br><span class="line">                    <span class="comment">// 从zset结构redisson_lock_timeout:{锁名}中弹出uuid:threadId</span></span><br><span class="line">                    <span class="string">"redis.call('zrem', KEYS[3], ARGV[2]);"</span> +</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// 遍历timeout zset，给每个元素减5秒</span></span><br><span class="line">                    <span class="comment">// decrease timeouts for all waiting in the queue</span></span><br><span class="line">                    <span class="string">"local keys = redis.call('zrange', KEYS[3], 0, -1);"</span> +</span><br><span class="line">                    <span class="string">"for i = 1, #keys, 1 do "</span> +</span><br><span class="line">                        <span class="string">"redis.call('zincrby', KEYS[3], -tonumber(ARGV[3]), keys[i]);"</span> +</span><br><span class="line">                    <span class="string">"end;"</span> +</span><br><span class="line"></span><br><span class="line">                    <span class="comment">// add hash 锁名，field uuid:threadId，value 1</span></span><br><span class="line">                    <span class="comment">// 设置过期时间，默认30秒，返回空</span></span><br><span class="line">                    <span class="comment">// acquire the lock and set the TTL for the lease</span></span><br><span class="line">                    <span class="string">"redis.call('hset', KEYS[1], ARGV[2], 1);"</span> +</span><br><span class="line">                    <span class="string">"redis.call('pexpire', KEYS[1], ARGV[1]);"</span> +</span><br><span class="line">                    <span class="string">"return nil;"</span> +</span><br><span class="line">                <span class="string">"end;"</span> +</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 如果当前线程已经加过锁了，就把value加1，更新过期时间，返回空</span></span><br><span class="line">                <span class="comment">// check if the lock is already held, and this is a re-entry</span></span><br><span class="line">                <span class="string">"if redis.call('hexists', KEYS[1], ARGV[2]) == 1 then "</span> +</span><br><span class="line">                    <span class="string">"redis.call('hincrby', KEYS[1], ARGV[2],1);"</span> +</span><br><span class="line">                    <span class="string">"redis.call('pexpire', KEYS[1], ARGV[1]);"</span> +</span><br><span class="line">                    <span class="string">"return nil;"</span> +</span><br><span class="line">                <span class="string">"end;"</span> +</span><br><span class="line"></span><br><span class="line">                <span class="comment">// 获取当前线程等待超时时间，如果存在就返回剩余的超时时间</span></span><br><span class="line">                <span class="comment">// the lock cannot be acquired</span></span><br><span class="line">                <span class="comment">// check if the thread is already in the queue</span></span><br><span class="line">                <span class="string">"local timeout = redis.call('zscore', KEYS[3], ARGV[2]);"</span> +</span><br><span class="line">                <span class="string">"if timeout ~= false then "</span> +</span><br><span class="line">                    <span class="comment">// the real timeout is the timeout of the prior thread</span></span><br><span class="line">                    <span class="comment">// in the queue, but this is approximately correct, and</span></span><br><span class="line">                    <span class="comment">// avoids having to traverse the queue</span></span><br><span class="line">                    <span class="string">"return timeout - tonumber(ARGV[3]) - tonumber(ARGV[4]);"</span> +</span><br><span class="line">                <span class="string">"end;"</span> +</span><br><span class="line"></span><br><span class="line">                <span class="comment">// add the thread to the queue at the end, and set its timeout in the timeout set to the timeout of</span></span><br><span class="line">                <span class="comment">// the prior thread in the queue (or the timeout of the lock if the queue is empty) plus the</span></span><br><span class="line">                <span class="comment">// threadWaitTime</span></span><br><span class="line">                <span class="comment">// 从等待队列里取出最后一个线程</span></span><br><span class="line">                <span class="string">"local lastThreadId = redis.call('lindex', KEYS[2], -1);"</span> +</span><br><span class="line">                <span class="string">"local ttl;"</span> +</span><br><span class="line">                <span class="string">"if lastThreadId ~= false and lastThreadId ~= ARGV[2] then "</span> +</span><br><span class="line">                    <span class="comment">// 最后一个线程等待ttl</span></span><br><span class="line">                    <span class="string">"ttl = tonumber(redis.call('zscore', KEYS[3], lastThreadId)) - tonumber(ARGV[4]);"</span> +</span><br><span class="line">                <span class="string">"else "</span> +</span><br><span class="line">                    <span class="comment">// 正在加锁的线程ttl</span></span><br><span class="line">                    <span class="string">"ttl = redis.call('pttl', KEYS[1]);"</span> +</span><br><span class="line">                <span class="string">"end;"</span> +</span><br><span class="line">                <span class="comment">// timeout = 上一个锁ttl + 30s + 当前时间</span></span><br><span class="line">                <span class="string">"local timeout = ttl + tonumber(ARGV[3]) + tonumber(ARGV[4]);"</span> +</span><br><span class="line">                <span class="comment">// 把当前线程添加到超时zset里，值为timeout</span></span><br><span class="line">                <span class="string">"if redis.call('zadd', KEYS[3], timeout, ARGV[2]) == 1 then "</span> +</span><br><span class="line">                    <span class="comment">// 把当前线程添加到等待队列</span></span><br><span class="line">                    <span class="string">"redis.call('rpush', KEYS[2], ARGV[2]);"</span> +</span><br><span class="line">                <span class="string">"end;"</span> +</span><br><span class="line">                <span class="string">"return ttl;"</span>,</span><br><span class="line">                <span class="comment">// key[1] 锁名；key[2] 等待队列 redisson_lock_queue:{锁名}；key[3] 超时zset redisson_lock_timeout:{锁名}</span></span><br><span class="line">                Arrays.asList(getRawName(), threadsQueueName, timeoutSetName),</span><br><span class="line">                <span class="comment">// ARGV[1] 超时时间；ARGV[2] field uuid:threadId；ARGV[3] 等待时间，默认5秒；ARGV[4] 当前时间</span></span><br><span class="line">                unit.toMillis(leaseTime), getLockName(threadId), wait, currentTime);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException();</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="可重入加锁"><a href="#可重入加锁" class="headerlink" title="可重入加锁"></a>可重入加锁</h1><p>RedissionFairLock公平锁可重入加锁逻辑同可重入锁RedissionFairLock，当加锁线程是当前线程，那么把lock key对应的field value值加1，然后更新lock key过期时间。</p>
+<h1 id="超时重新入队"><a href="#超时重新入队" class="headerlink" title="超时重新入队"></a>超时重新入队</h1><p>如果当前线程已经加入等待队列开始排队，并且超过了等待时间（前面每个锁5秒），那么再次获取锁时，首先会移除当前线程（以及之前线程）在等待队列和超时集合中的值，然后尝试获取锁，如果获取锁失败会重新把当前线程添加到等待队列末尾，并且重新放到超时集合中，timeout为队列中最后一个线程超时时间 + 5秒。</p>
+<h1 id="释放锁"><a href="#释放锁" class="headerlink" title="释放锁"></a>释放锁</h1><p>在解锁时，RedissionFairLock会先删除等待队列中已经超时的线程，然后开始处理解锁，如果被当前线程重入了多次就把value减1，否则直接删除锁，同时发布一条解锁消息通知订阅的等待线程。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> RFuture&lt;Boolean&gt; <span class="title">unlockInnerAsync</span><span class="params">(<span class="keyword">long</span> threadId)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">            <span class="comment">// remove stale threads</span></span><br><span class="line">            <span class="string">"while true do "</span></span><br><span class="line">            + <span class="string">"local firstThreadId2 = redis.call('lindex', KEYS[2], 0);"</span></span><br><span class="line">            + <span class="string">"if firstThreadId2 == false then "</span></span><br><span class="line">                + <span class="string">"break;"</span></span><br><span class="line">            + <span class="string">"end; "</span></span><br><span class="line">            <span class="comment">// 删除等待队列中已经过期的线程</span></span><br><span class="line">            + <span class="string">"local timeout = tonumber(redis.call('zscore', KEYS[3], firstThreadId2));"</span></span><br><span class="line">            + <span class="string">"if timeout &lt;= tonumber(ARGV[4]) then "</span></span><br><span class="line">                + <span class="string">"redis.call('zrem', KEYS[3], firstThreadId2); "</span></span><br><span class="line">                + <span class="string">"redis.call('lpop', KEYS[2]); "</span></span><br><span class="line">            + <span class="string">"else "</span></span><br><span class="line">                + <span class="string">"break;"</span></span><br><span class="line">            + <span class="string">"end; "</span></span><br><span class="line">          + <span class="string">"end;"</span></span><br><span class="line">            </span><br><span class="line">          <span class="comment">// 如果锁不存在</span></span><br><span class="line">          + <span class="string">"if (redis.call('exists', KEYS[1]) == 0) then "</span> + </span><br><span class="line">                <span class="string">"local nextThreadId = redis.call('lindex', KEYS[2], 0); "</span> + </span><br><span class="line">                <span class="string">"if nextThreadId ~= false then "</span> +</span><br><span class="line">                    <span class="string">"redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); "</span> +</span><br><span class="line">                <span class="string">"end; "</span> +</span><br><span class="line">                <span class="string">"return 1; "</span> +</span><br><span class="line">            <span class="string">"end;"</span> +</span><br><span class="line">            <span class="string">"if (redis.call('hexists', KEYS[1], ARGV[3]) == 0) then "</span> +</span><br><span class="line">                <span class="string">"return nil;"</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">            <span class="comment">// 重入加锁处理</span></span><br><span class="line">            <span class="string">"local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); "</span> +</span><br><span class="line">            <span class="string">"if (counter &gt; 0) then "</span> +</span><br><span class="line">                <span class="string">"redis.call('pexpire', KEYS[1], ARGV[2]); "</span> +</span><br><span class="line">                <span class="string">"return 0; "</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">                </span><br><span class="line">            <span class="comment">// 如果只重入了一次直接删除</span></span><br><span class="line">            <span class="string">"redis.call('del', KEYS[1]); "</span> +</span><br><span class="line">            <span class="string">"local nextThreadId = redis.call('lindex', KEYS[2], 0); "</span> + </span><br><span class="line">            <span class="string">"if nextThreadId ~= false then "</span> +</span><br><span class="line">                <span class="comment">// 发布一条解锁消息，通知等待加锁的线程</span></span><br><span class="line">                <span class="string">"redis.call('publish', KEYS[4] .. ':' .. nextThreadId, ARGV[1]); "</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">            <span class="string">"return 1; "</span>,</span><br><span class="line">            Arrays.asList(getRawName(), threadsQueueName, timeoutSetName, getChannelName()),</span><br><span class="line">            LockPubSub.UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId), System.currentTimeMillis());</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%8E%92%E9%98%9F%E5%8A%A0%E9%94%81"><span class="toc-number">1.</span> <span class="toc-text">排队加锁</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%AF%E9%87%8D%E5%85%A5%E5%8A%A0%E9%94%81"><span class="toc-number">2.</span> <span class="toc-text">可重入加锁</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%B6%85%E6%97%B6%E9%87%8D%E6%96%B0%E5%85%A5%E9%98%9F"><span class="toc-number">3.</span> <span class="toc-text">超时重新入队</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%87%8A%E6%94%BE%E9%94%81"><span class="toc-number">4.</span> <span class="toc-text">释放锁</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/13/redission-02/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/13/redission-02/&text=【Redission源码】公平锁源码解析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/13/redission-02/&is_video=false&description=【Redission源码】公平锁源码解析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】公平锁源码解析&body=Check out this article: https://haifuns.com/2021/12/13/redission-02/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/13/redission-02/&title=【Redission源码】公平锁源码解析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/13/redission-02/&name=【Redission源码】公平锁源码解析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/13/redission-02/&t=【Redission源码】公平锁源码解析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

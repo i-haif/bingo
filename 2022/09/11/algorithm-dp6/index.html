@@ -1,0 +1,365 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="1.拆分数组给定一个正整数组 arr，将 arr 中所有的数分成两个集合，尽量让两个集合的累加和接近。返回最近情况下，较小集合的累计和。 暴力递归1234567891011121314151617181920212223242526public static int right(int[] arr) {	if (arr &#x3D;&#x3D; null || arr.length &lt; 2) {		return">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【算法基础】暴力递归到动态规划（六）">
+<meta property="og:url" content="https://haifuns.com/2022/09/11/algorithm-dp6/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="1.拆分数组给定一个正整数组 arr，将 arr 中所有的数分成两个集合，尽量让两个集合的累加和接近。返回最近情况下，较小集合的累计和。 暴力递归1234567891011121314151617181920212223242526public static int right(int[] arr) {	if (arr &#x3D;&#x3D; null || arr.length &lt; 2) {		return">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2022-09-11T08:30:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.653Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="算法">
+<meta property="article:tag" content="动态规划">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【算法基础】暴力递归到动态规划（六）</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2022/09/11/algorithm-dp/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2022/09/07/algorithm-dp5/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2022/09/11/algorithm-dp6/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2022/09/11/algorithm-dp6/&text=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2022/09/11/algorithm-dp6/&is_video=false&description=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【算法基础】暴力递归到动态规划（六）&body=Check out this article: https://haifuns.com/2022/09/11/algorithm-dp6/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2022/09/11/algorithm-dp6/&name=【算法基础】暴力递归到动态规划（六）&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2022/09/11/algorithm-dp6/&t=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E6%8B%86%E5%88%86%E6%95%B0%E7%BB%84"><span class="toc-number">1.</span> <span class="toc-text">1.拆分数组</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92"><span class="toc-number">1.1.</span> <span class="toc-text">暴力递归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92"><span class="toc-number">1.2.</span> <span class="toc-text">动态规划</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E6%8B%86%E5%88%86%E6%95%B0%E7%BB%842"><span class="toc-number">2.</span> <span class="toc-text">2.拆分数组2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92-1"><span class="toc-number">2.1.</span> <span class="toc-text">暴力递归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92-1"><span class="toc-number">2.2.</span> <span class="toc-text">动态规划</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-N%E7%9A%87%E5%90%8E%E9%97%AE%E9%A2%98%EF%BC%88%E6%97%A0%E6%B3%95%E6%94%B9%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%89"><span class="toc-number">3.</span> <span class="toc-text">3.N皇后问题（无法改动态规划）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92-2"><span class="toc-number">3.1.</span> <span class="toc-text">暴力递归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92%EF%BC%88%E4%BD%8D%E8%BF%90%E7%AE%97%EF%BC%8C%E5%B8%B8%E6%95%B0%E6%97%B6%E9%97%B4%E4%BC%98%E5%8C%96%EF%BC%89"><span class="toc-number">3.2.</span> <span class="toc-text">暴力递归（位运算，常数时间优化）</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【算法基础】暴力递归到动态规划（六）
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2022-09-11T08:30:00.000Z" class="dt-published" itemprop="datePublished">2022-09-11</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E7%AE%97%E6%B3%95/">算法</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92/" rel="tag">动态规划</a>, <a class="p-category" href="/tags/%E7%AE%97%E6%B3%95/" rel="tag">算法</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="1-拆分数组"><a href="#1-拆分数组" class="headerlink" title="1.拆分数组"></a>1.拆分数组</h1><p>给定一个正整数组 arr，将 arr 中所有的数分成两个集合，尽量让两个集合的累加和接近。<br>返回最近情况下，较小集合的累计和。</p>
+<h2 id="暴力递归"><a href="#暴力递归" class="headerlink" title="暴力递归"></a>暴力递归</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">right</span><span class="params">(<span class="keyword">int</span>[] arr)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (arr == <span class="keyword">null</span> || arr.length &lt; <span class="number">2</span>) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> num : arr) {</span><br><span class="line">		sum += num;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">return</span> process(arr, <span class="number">0</span>, sum / <span class="number">2</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从arr[i..]自由选择，累加和尽量接近rest，但不能超过rest的情况下，最接近的累加和</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">process</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> index, <span class="keyword">int</span> rest)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (index == arr.length) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	} <span class="keyword">else</span> { <span class="comment">// 还有数，arr[i]这个数</span></span><br><span class="line">		<span class="comment">// 可能性1，不使用arr[i]</span></span><br><span class="line">		<span class="keyword">int</span> p1 = process(arr, index + <span class="number">1</span>, rest);</span><br><span class="line">		<span class="comment">// 可能性2，要使用arr[i]</span></span><br><span class="line">		<span class="keyword">int</span> p2 = <span class="number">0</span>;</span><br><span class="line">		<span class="keyword">if</span> (arr[index] &lt;= rest) {</span><br><span class="line">			p2 = arr[index] + process(arr, index + <span class="number">1</span>, rest - arr[index]);</span><br><span class="line">		}</span><br><span class="line">		<span class="keyword">return</span> Math.max(p1, p2);</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="动态规划"><a href="#动态规划" class="headerlink" title="动态规划"></a>动态规划</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">dp</span><span class="params">(<span class="keyword">int</span>[] arr)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (arr == <span class="keyword">null</span> || arr.length &lt; <span class="number">2</span>) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> num : arr) {</span><br><span class="line">		sum += num;</span><br><span class="line">	}</span><br><span class="line">	sum /= <span class="number">2</span>;</span><br><span class="line">	<span class="keyword">int</span> N = arr.length;</span><br><span class="line">	<span class="keyword">int</span>[][] dp = <span class="keyword">new</span> <span class="keyword">int</span>[N + <span class="number">1</span>][sum + <span class="number">1</span>]; <span class="comment">// N * (sum/2)</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = N - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) { <span class="comment">// 从下往上</span></span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> rest = <span class="number">0</span>; rest &lt;= sum; rest++) { <span class="comment">// 从左往右</span></span><br><span class="line">			<span class="comment">// 可能性1，不使用arr[i]</span></span><br><span class="line">			<span class="keyword">int</span> p1 = dp[i + <span class="number">1</span>][rest];</span><br><span class="line">			<span class="comment">// 可能性2，要使用arr[i]</span></span><br><span class="line">			<span class="keyword">int</span> p2 = <span class="number">0</span>;</span><br><span class="line">			<span class="keyword">if</span> (arr[i] &lt;= rest) {</span><br><span class="line">				p2 = arr[i] + dp[i + <span class="number">1</span>][rest - arr[i]];</span><br><span class="line">			}</span><br><span class="line">			dp[i][rest] = Math.max(p1, p2);</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">return</span> dp[<span class="number">0</span>][sum];</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="2-拆分数组2"><a href="#2-拆分数组2" class="headerlink" title="2.拆分数组2"></a>2.拆分数组2</h1><p>给定一个正数数组 arr，把 arr 中的所有数分为两个集合。</p>
+<p>要求：</p>
+<ul>
+<li>如果 arr 长度为偶数，两个集合包含的个数要一样多</li>
+<li>如果 arr 长度为奇数，两个集合包含的个数必须要差一个</li>
+<li>两个集合的累计和尽可能接近</li>
+</ul>
+<p>返回最接近情况下，较小集合的累加和。</p>
+<h2 id="暴力递归-1"><a href="#暴力递归-1" class="headerlink" title="暴力递归"></a>暴力递归</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">right</span><span class="params">(<span class="keyword">int</span>[] arr)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (arr == <span class="keyword">null</span> || arr.length &lt; <span class="number">2</span>) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> num : arr) {</span><br><span class="line">		sum += num;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span> ((arr.length &amp; <span class="number">1</span>) == <span class="number">0</span>) {</span><br><span class="line">		<span class="keyword">return</span> process(arr, <span class="number">0</span>, arr.length / <span class="number">2</span>, sum / <span class="number">2</span>);</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="keyword">return</span> Math.max(process(arr, <span class="number">0</span>, arr.length / <span class="number">2</span>, sum / <span class="number">2</span>), process(arr, <span class="number">0</span>, arr.length / <span class="number">2</span> + <span class="number">1</span>, sum / <span class="number">2</span>));</span><br><span class="line">	}</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// 从arr[i..]自由选择，挑选picks个数，累加和&lt;=rest, 返回离rest最近的累加和</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">process</span><span class="params">(<span class="keyword">int</span>[] arr, <span class="keyword">int</span> i, <span class="keyword">int</span> picks, <span class="keyword">int</span> rest)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (i == arr.length) {</span><br><span class="line">		<span class="keyword">return</span> picks == <span class="number">0</span> ? <span class="number">0</span> : -<span class="number">1</span>; <span class="comment">// -1标记无效</span></span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="comment">// 不使用arr[i]这个数</span></span><br><span class="line">		<span class="keyword">int</span> p1 = process(arr, i + <span class="number">1</span>, picks, rest);</span><br><span class="line">		<span class="comment">// 要使用arr[i]这个数</span></span><br><span class="line">		<span class="keyword">int</span> p2 = -<span class="number">1</span>;</span><br><span class="line">		<span class="keyword">int</span> next = -<span class="number">1</span>;</span><br><span class="line">		<span class="keyword">if</span> (arr[i] &lt;= rest) {</span><br><span class="line">			next = process(arr, i + <span class="number">1</span>, picks - <span class="number">1</span>, rest - arr[i]);</span><br><span class="line">		}</span><br><span class="line">		<span class="keyword">if</span> (next != -<span class="number">1</span>) {</span><br><span class="line">			p2 = arr[i] + next;</span><br><span class="line">		}</span><br><span class="line">		<span class="keyword">return</span> Math.max(p1, p2);</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="动态规划-1"><a href="#动态规划-1" class="headerlink" title="动态规划"></a>动态规划</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">dp</span><span class="params">(<span class="keyword">int</span>[] arr)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (arr == <span class="keyword">null</span> || arr.length &lt; <span class="number">2</span>) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">int</span> sum = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> num : arr) {</span><br><span class="line">		sum += num;</span><br><span class="line">	}</span><br><span class="line">	sum /= <span class="number">2</span>;</span><br><span class="line">	<span class="keyword">int</span> N = arr.length;</span><br><span class="line">	<span class="keyword">int</span> M = (N + <span class="number">1</span>) / <span class="number">2</span>;</span><br><span class="line">	<span class="keyword">int</span>[][][] dp = <span class="keyword">new</span> <span class="keyword">int</span>[N + <span class="number">1</span>][M + <span class="number">1</span>][sum + <span class="number">1</span>];</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = <span class="number">0</span>; i &lt;= N; i++) {</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt;= M; j++) {</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt;= sum; k++) {</span><br><span class="line">				dp[i][j][k] = -<span class="number">1</span>;</span><br><span class="line">			}</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> rest = <span class="number">0</span>; rest &lt;= sum; rest++) {</span><br><span class="line">		dp[N][<span class="number">0</span>][rest] = <span class="number">0</span>; <span class="comment">// i=N picks=0，有效</span></span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> i = N - <span class="number">1</span>; i &gt;= <span class="number">0</span>; i--) {</span><br><span class="line">		<span class="keyword">for</span> (<span class="keyword">int</span> picks = <span class="number">0</span>; picks &lt;= M; picks++) {</span><br><span class="line">			<span class="keyword">for</span> (<span class="keyword">int</span> rest = <span class="number">0</span>; rest &lt;= sum; rest++) {</span><br><span class="line">				<span class="comment">// 不要arr[i]这个数</span></span><br><span class="line">				<span class="keyword">int</span> p1 = dp[i + <span class="number">1</span>][picks][rest];</span><br><span class="line">				<span class="comment">// 要使用arr[i]这个数</span></span><br><span class="line">				<span class="keyword">int</span> p2 = -<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">int</span> next = -<span class="number">1</span>;</span><br><span class="line">				<span class="keyword">if</span> (picks - <span class="number">1</span> &gt;= <span class="number">0</span> &amp;&amp; arr[i] &lt;= rest) {</span><br><span class="line">					next = dp[i + <span class="number">1</span>][picks - <span class="number">1</span>][rest - arr[i]];</span><br><span class="line">				}</span><br><span class="line">				<span class="keyword">if</span> (next != -<span class="number">1</span>) {</span><br><span class="line">					p2 = arr[i] + next;</span><br><span class="line">				}</span><br><span class="line">				dp[i][picks][rest] = Math.max(p1, p2);</span><br><span class="line">			}</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">if</span> (arr.length % <span class="number">2</span> == <span class="number">0</span>) {</span><br><span class="line">		<span class="keyword">return</span> dp[<span class="number">0</span>][arr.length / <span class="number">2</span>][sum];</span><br><span class="line">	} <span class="keyword">else</span> {</span><br><span class="line">		<span class="keyword">return</span> Math.max(dp[<span class="number">0</span>][arr.length / <span class="number">2</span>][sum], dp[<span class="number">0</span>][(arr.length / <span class="number">2</span>) + <span class="number">1</span>][sum]);</span><br><span class="line">	}</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="3-N皇后问题（无法改动态规划）"><a href="#3-N皇后问题（无法改动态规划）" class="headerlink" title="3.N皇后问题（无法改动态规划）"></a>3.N皇后问题（无法改动态规划）</h1><p>N皇后问题：在 N * N 的棋盘上要摆 N 个皇后，要求任何两个皇后不同行、不同列，也不在同一条斜线上。</p>
+<p>给定一个整数 N，返回 N 皇后问题有多少种摆法。</p>
+<p>N=1，返回1<br>N=2或3，2皇后和3皇后问题无论怎么摆都不行，返回0<br>N=8，返回92</p>
+<h2 id="暴力递归-2"><a href="#暴力递归-2" class="headerlink" title="暴力递归"></a>暴力递归</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">num</span><span class="params">(<span class="keyword">int</span> n)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (n &lt; <span class="number">1</span>) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">int</span>[] record = <span class="keyword">new</span> <span class="keyword">int</span>[n];</span><br><span class="line">	<span class="keyword">return</span> process(<span class="number">0</span>, record, n);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// 当前来到i行，一共是0~N-1行</span></span><br><span class="line"><span class="comment">// 在i行上放皇后，所有列都尝试</span></span><br><span class="line"><span class="comment">// 必须要保证跟之前所有的皇后不打架</span></span><br><span class="line"><span class="comment">// record[x] = y 表示第x行的皇后，放在了y列上</span></span><br><span class="line"><span class="comment">// 返回：不关心i以上发生了什么，i.. 后续有多少合法的方法数</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">process</span><span class="params">(<span class="keyword">int</span> i, <span class="keyword">int</span>[] record, <span class="keyword">int</span> n)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (i == n) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">	<span class="comment">// i行的皇后，放哪一列呢？j列，</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> j = <span class="number">0</span>; j &lt; n; j++) {</span><br><span class="line">		<span class="keyword">if</span> (isValid(record, i, j)) {</span><br><span class="line">			record[i] = j;</span><br><span class="line">			res += process(i + <span class="number">1</span>, record, n);</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">boolean</span> <span class="title">isValid</span><span class="params">(<span class="keyword">int</span>[] record, <span class="keyword">int</span> i, <span class="keyword">int</span> j)</span> </span>{</span><br><span class="line">	<span class="comment">// 0..i-1</span></span><br><span class="line">	<span class="keyword">for</span> (<span class="keyword">int</span> k = <span class="number">0</span>; k &lt; i; k++) {</span><br><span class="line">		<span class="comment">// 共列或者共斜线</span></span><br><span class="line">		<span class="keyword">if</span> (j == record[k] || Math.abs(record[k] - j) == Math.abs(i - k)) {</span><br><span class="line">			<span class="keyword">return</span> <span class="keyword">false</span>;</span><br><span class="line">		}</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">return</span> <span class="keyword">true</span>;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="暴力递归（位运算，常数时间优化）"><a href="#暴力递归（位运算，常数时间优化）" class="headerlink" title="暴力递归（位运算，常数时间优化）"></a>暴力递归（位运算，常数时间优化）</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 不要超过32皇后问题，越界</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">num</span><span class="params">(<span class="keyword">int</span> n)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (n &lt; <span class="number">1</span> || n &gt; <span class="number">32</span>) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">0</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">// 如果你是13皇后问题，limit 最右13个1，其他都是0</span></span><br><span class="line">	<span class="keyword">int</span> limit = n == <span class="number">32</span> ? -<span class="number">1</span> : (<span class="number">1</span> &lt;&lt; n) - <span class="number">1</span>;</span><br><span class="line">	<span class="keyword">return</span> process(limit, <span class="number">0</span>, <span class="number">0</span>, <span class="number">0</span>);</span><br><span class="line">}</span><br><span class="line"></span><br><span class="line"><span class="comment">// limit : 二进制右侧N个1</span></span><br><span class="line"><span class="comment">// 之前皇后的列影响：colLim</span></span><br><span class="line"><span class="comment">// 之前皇后的左下对角线影响：leftDiaLim</span></span><br><span class="line"><span class="comment">// 之前皇后的右下对角线影响：rightDiaLim</span></span><br><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">static</span> <span class="keyword">int</span> <span class="title">process</span><span class="params">(<span class="keyword">int</span> limit, <span class="keyword">int</span> colLim, <span class="keyword">int</span> leftDiaLim, <span class="keyword">int</span> rightDiaLim)</span> </span>{</span><br><span class="line">	<span class="keyword">if</span> (colLim == limit) {</span><br><span class="line">		<span class="keyword">return</span> <span class="number">1</span>;</span><br><span class="line">	}</span><br><span class="line">	<span class="comment">// pos中所有是1的位置，是可以去尝试皇后的位置</span></span><br><span class="line">	<span class="keyword">int</span> pos = limit &amp; (~(colLim | leftDiaLim | rightDiaLim));</span><br><span class="line">	<span class="keyword">int</span> mostRightOne = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">int</span> res = <span class="number">0</span>;</span><br><span class="line">	<span class="keyword">while</span> (pos != <span class="number">0</span>) {</span><br><span class="line">		<span class="comment">// pos中最右侧的1</span></span><br><span class="line">		mostRightOne = pos &amp; (~pos + <span class="number">1</span>);</span><br><span class="line">		pos = pos - mostRightOne;</span><br><span class="line">		res += process(limit, colLim | mostRightOne, (leftDiaLim | mostRightOne) &lt;&lt; <span class="number">1</span>,</span><br><span class="line">		                (rightDiaLim | mostRightOne) &gt;&gt;&gt; <span class="number">1</span>);</span><br><span class="line">	}</span><br><span class="line">	<span class="keyword">return</span> res;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#1-%E6%8B%86%E5%88%86%E6%95%B0%E7%BB%84"><span class="toc-number">1.</span> <span class="toc-text">1.拆分数组</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92"><span class="toc-number">1.1.</span> <span class="toc-text">暴力递归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92"><span class="toc-number">1.2.</span> <span class="toc-text">动态规划</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#2-%E6%8B%86%E5%88%86%E6%95%B0%E7%BB%842"><span class="toc-number">2.</span> <span class="toc-text">2.拆分数组2</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92-1"><span class="toc-number">2.1.</span> <span class="toc-text">暴力递归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92-1"><span class="toc-number">2.2.</span> <span class="toc-text">动态规划</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#3-N%E7%9A%87%E5%90%8E%E9%97%AE%E9%A2%98%EF%BC%88%E6%97%A0%E6%B3%95%E6%94%B9%E5%8A%A8%E6%80%81%E8%A7%84%E5%88%92%EF%BC%89"><span class="toc-number">3.</span> <span class="toc-text">3.N皇后问题（无法改动态规划）</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92-2"><span class="toc-number">3.1.</span> <span class="toc-text">暴力递归</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9A%B4%E5%8A%9B%E9%80%92%E5%BD%92%EF%BC%88%E4%BD%8D%E8%BF%90%E7%AE%97%EF%BC%8C%E5%B8%B8%E6%95%B0%E6%97%B6%E9%97%B4%E4%BC%98%E5%8C%96%EF%BC%89"><span class="toc-number">3.2.</span> <span class="toc-text">暴力递归（位运算，常数时间优化）</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2022/09/11/algorithm-dp6/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2022/09/11/algorithm-dp6/&text=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2022/09/11/algorithm-dp6/&is_video=false&description=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【算法基础】暴力递归到动态规划（六）&body=Check out this article: https://haifuns.com/2022/09/11/algorithm-dp6/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2022/09/11/algorithm-dp6/&title=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2022/09/11/algorithm-dp6/&name=【算法基础】暴力递归到动态规划（六）&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2022/09/11/algorithm-dp6/&t=【算法基础】暴力递归到动态规划（六）"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

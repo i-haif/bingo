@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="主题管理创建主题如果broker端配置参数auto.create.topics.enable设置为true（默认），当生产者向一个尚未创建的主题发送消息时，会自动创建一个分区数为num.partitions（默认1）、副本数为default.replication.factor（默认1）的主题。当一个消费者从一个未知主题中读取消息时，或者当任意客户端向未知主题发送元数据请求时，都会按照配置创建一个">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【Kafka】：主题与分区">
+<meta property="og:url" content="https://haifuns.com/2021/05/29/kafka-05/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="主题管理创建主题如果broker端配置参数auto.create.topics.enable设置为true（默认），当生产者向一个尚未创建的主题发送消息时，会自动创建一个分区数为num.partitions（默认1）、副本数为default.replication.factor（默认1）的主题。当一个消费者从一个未知主题中读取消息时，或者当任意客户端向未知主题发送元数据请求时，都会按照配置创建一个">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-05-29T15:00:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.657Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="Kafka">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【Kafka】：主题与分区</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2021/05/29/kafka-06/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2021/05/22/kafka-04/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/05/29/kafka-05/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/05/29/kafka-05/&text=【Kafka】：主题与分区"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/05/29/kafka-05/&is_video=false&description=【Kafka】：主题与分区"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Kafka】：主题与分区&body=Check out this article: https://haifuns.com/2021/05/29/kafka-05/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/05/29/kafka-05/&name=【Kafka】：主题与分区&description=&lt;h1 id=&#34;主题管理&#34;&gt;&lt;a href=&#34;#主题管理&#34; class=&#34;headerlink&#34; title=&#34;主题管理&#34;&gt;&lt;/a&gt;主题管理&lt;/h1&gt;&lt;h2 id=&#34;创建主题&#34;&gt;&lt;a href=&#34;#创建主题&#34; class=&#34;headerlink&#34; title=&#34;创建主题&#34;&gt;&lt;/a&gt;创建主题&lt;/h2&gt;&lt;p&gt;如果broker端配置参数&lt;code&gt;auto.create.topics.enable&lt;/code&gt;设置为true（默认），当生产者向一个尚未创建的主题发送消息时，会自动创建一个分区数为&lt;code&gt;num.partitions&lt;/code&gt;（默认1）、副本数为&lt;code&gt;default.replication.factor&lt;/code&gt;（默认1）的主题。当一个消费者从一个未知主题中读取消息时，或者当任意客户端向未知主题发送元数据请求时，都会按照配置创建一个相应的主题。&lt;/p&gt;
+&lt;p&gt;不建议将&lt;code&gt;auto.create.topics.enable&lt;/code&gt;参数设置为true，推荐使用kafka-topic.sh脚本手动创建主题。&lt;/p&gt;
+&lt;p&gt;示例，创建分区数为4，副本数为3的主题topic-demo：&lt;/p&gt;
+&lt;figure class=&#34;highlight shell&#34;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&#34;gutter&#34;&gt;&lt;pre&gt;&lt;span class=&#34;line&#34;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#34;code&#34;&gt;&lt;pre&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;meta&#34;&gt;$&lt;/span&gt;&lt;span class=&#34;bash&#34;&gt; kafka-topics.sh --zookeeper localhost:2181/kafka --create --topic topic-demo --replication-factor 3 --partitions 4&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/figure&gt;
+
+&lt;p&gt;在执行完脚本之后，Kafka会在log.dir或者log.dirs参数所配置的目录下创建相应的主题分区，默认目录为/tmp/kafka-logs。&lt;/p&gt;"><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/05/29/kafka-05/&t=【Kafka】：主题与分区"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%BB%E9%A2%98%E7%AE%A1%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">主题管理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%BB%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">创建主题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E4%B8%BB%E9%A2%98"><span class="toc-number">1.2.</span> <span class="toc-text">查看主题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E4%B8%BB%E9%A2%98"><span class="toc-number">1.3.</span> <span class="toc-text">修改主题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%AE%A1%E7%90%86"><span class="toc-number">1.4.</span> <span class="toc-text">配置管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E4%B8%BB%E9%A2%98"><span class="toc-number">1.5.</span> <span class="toc-text">删除主题</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E5%8C%BA%E7%AE%A1%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">分区管理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%98%E5%85%88%E5%89%AF%E6%9C%AC%E9%80%89%E4%B8%BE"><span class="toc-number">2.1.</span> <span class="toc-text">优先副本选举</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%8C%BA%E9%87%8D%E5%88%86%E9%85%8D"><span class="toc-number">2.2.</span> <span class="toc-text">分区重分配</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6%E9%99%90%E6%B5%81"><span class="toc-number">2.3.</span> <span class="toc-text">复制限流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E5%89%AF%E6%9C%AC%E5%9B%A0%E5%AD%90"><span class="toc-number">2.4.</span> <span class="toc-text">修改副本因子</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【Kafka】：主题与分区
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">Haif.</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-05-29T15:00:00.000Z" class="dt-published" itemprop="datePublished">2021-05-29</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E6%B6%88%E6%81%AF%E4%B8%AD%E9%97%B4%E4%BB%B6/">消息中间件</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/Kafka/" rel="tag">Kafka</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="主题管理"><a href="#主题管理" class="headerlink" title="主题管理"></a>主题管理</h1><h2 id="创建主题"><a href="#创建主题" class="headerlink" title="创建主题"></a>创建主题</h2><p>如果broker端配置参数<code>auto.create.topics.enable</code>设置为true（默认），当生产者向一个尚未创建的主题发送消息时，会自动创建一个分区数为<code>num.partitions</code>（默认1）、副本数为<code>default.replication.factor</code>（默认1）的主题。当一个消费者从一个未知主题中读取消息时，或者当任意客户端向未知主题发送元数据请求时，都会按照配置创建一个相应的主题。</p>
+<p>不建议将<code>auto.create.topics.enable</code>参数设置为true，推荐使用kafka-topic.sh脚本手动创建主题。</p>
+<p>示例，创建分区数为4，副本数为3的主题topic-demo：</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> kafka-topics.sh --zookeeper localhost:2181/kafka --create --topic topic-demo --replication-factor 3 --partitions 4</span></span><br></pre></td></tr></tbody></table></figure>
+
+<p>在执行完脚本之后，Kafka会在log.dir或者log.dirs参数所配置的目录下创建相应的主题分区，默认目录为/tmp/kafka-logs。</p>
+<span id="more"></span>
+
+<h2 id="查看主题"><a href="#查看主题" class="headerlink" title="查看主题"></a>查看主题</h2><figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> kafka-topic.sh --zookeeper localhost:2181/kafka -list <span class="comment"># 查看当前所有可用主题</span></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> kafka-topic.sh --zookeeper localhost:2181/kafka -desctibe -- topic topic-create,topic-demo <span class="comment"># 查看指定主题详细信息</span></span></span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="修改主题"><a href="#修改主题" class="headerlink" title="修改主题"></a>修改主题</h2><figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> kafka-topic.sh --zookeeper localhost:2181/kafka --alter --topic topic-config --partitons 3 <span class="comment"># 将topic-config分区由1增加到3，注意：不可以减少分区</span></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> kafka-topic.sh --zookeeper localhost:2181/kafka --alter --topic topic-config --config max.message.bytes=2000 <span class="comment"># 修改主题配置信息</span></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> kafka-topic.sh --zookeeper localhost:2181/kafka --alter --topic topic-config --delete-config max.message.bytes <span class="comment"># 删除主题配置</span></span></span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="配置管理"><a href="#配置管理" class="headerlink" title="配置管理"></a>配置管理</h2><p>Kafka可以使用kafka-config.sh脚本动态修改配置，alter命名变更、desctibe命令查看。</p>
+<figure class="highlight shell"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">$</span><span class="bash"> kafka-topic.sh --zookeeper localhost:2181/kafka --describe --entity-type topics --entity-name topic-config</span> </span><br><span class="line">                    # --describe 查看指令</span><br><span class="line">                    # --entity-type 指定查看配置实体类型，topics/brokers/clients/users</span><br><span class="line">                    # --entity-name 指定查看配置实体名称</span><br><span class="line">                    </span><br><span class="line"><span class="meta">$</span><span class="bash"> kafka-configs.sh --zookeeper localhost:2181/kafka --alter --entity-type topics --entity-name topic-config --add-config cleanup.policy=compact,max.message.bytes=10000 <span class="comment"># 覆盖配置</span></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> kafka-topics.sh --zookeeper localhost:2181/kafka --describe --topic topic-config --topics-with-overrides <span class="comment"># 查看被覆盖的配置</span></span></span><br><span class="line"><span class="meta"></span></span><br><span class="line"><span class="meta">$</span><span class="bash"> kafka-configs.sh --zookeeper localhost:2181/kafka --alter --entity-type topics --entity-name topic-config --delete-config cleanup.policy,max.message.bytes <span class="comment"># 删除配置</span></span></span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="删除主题"><a href="#删除主题" class="headerlink" title="删除主题"></a>删除主题</h2><figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">$ kafka-topic.sh --zookeeper localhost:2181/kafka --delete --topic topic-delete # 删除主题topic-delete</span><br></pre></td></tr></tbody></table></figure>
+
+<p>删除主题还有broker端配置参数<code>delete.topic.enable</code>有关，只有配置为true时（默认），才能删除主题，否则删除主题操作会被忽略。</p>
+<p>使用kafka-topic.sh脚本删除主题本质上只是在zookeeper中的/admin/delete_topics路径下创建一个与带删除主题同名的节点，以此标记主题为待删除状态。与创建主题相同，真正删除主题的操作由Kafka的控制器负责完成。</p>
+<h1 id="分区管理"><a href="#分区管理" class="headerlink" title="分区管理"></a>分区管理</h1><h2 id="优先副本选举"><a href="#优先副本选举" class="headerlink" title="优先副本选举"></a>优先副本选举</h2><p>分区使用多副本的机制提升可靠性，但是只有leader副本对外提供读写服务，而follower副本只负责在内部进行消息同步。如果分区leader副本不可用，那么整个分区都会不可用，此时Kafka会从剩余的follower副本中挑选一个新的leader副本继续对外提供服务。</p>
+<p>为了防止Kafka集群的broker节点遇到故障导致分区漂移从而使集群负载不均衡的情况，Kafka引入了优先副本（preferred replica）的概念。优先副本即AR集合中的第一个副本，理想情况下，优先副本就是分区的leader副本。Kafka会通过优先副本选举促使优先副本选举为leader副本，促进集群负载均衡，这一行为称为“分区平衡”。</p>
+<p>Kafka提供分区自动平衡的功能，对应broker参数<code>auto.leader.rebaleance.enable</code>，默认为true。当开启分区自动平衡时，Kafka控制器会开启一个定时任务轮询所有broker节点，计算分区不平衡率（broker不平衡率=非优先副本leader个数/分区总数）是否超过<code>leader.imbalance.per.broker.percentage</code>参数配置的值（默认10%），如果超过设定比值就会自动进行分区平衡。</p>
+<p>自动分区平衡可能会导致负面的性能问题、客户端阻塞等问题，对于生产环境不建议将分区自动平衡功能开启，而建议使用<code>kafka-perferred-replica-election.sh</code>脚本手动对分区leader副本进行分区平衡。</p>
+<h2 id="分区重分配"><a href="#分区重分配" class="headerlink" title="分区重分配"></a>分区重分配</h2><p>当集群中新增broker节点时，只有新创建的主题分区才有可能被分配到这个节点上，而之前的主题并不会自动分配到新加入的节点中，为了解决这样的新节点负载和原先节点的负载不均衡，Kafka支持让分区副本进行再分配，即分区重分配。</p>
+<p>Kafka提供<code>kafka-reassign-partitions.sh</code>脚本来执行分区重分配工作，可以在集群扩容、broker节点失效的场景下对分区进行迁移。</p>
+<p>分区重分配的基本原理是先通过控制器为每个分区添加新副本，新副本将从分区的leader副本复制所有数据，在复制完成后，控制器将旧副本从副本清单里清除完成重分配。</p>
+<h2 id="复制限流"><a href="#复制限流" class="headerlink" title="复制限流"></a>复制限流</h2><p>分区重分配的本质在于数据复制，但是数据复制会占用额外的资源，当重分配的量太大就会影响性能。Kafka支持使用<code>kafka-config.sh</code>和<code>kafka-reassign-partitons.sh</code>两种方式对副本间的复制流量进行限制。</p>
+<h2 id="修改副本因子"><a href="#修改副本因子" class="headerlink" title="修改副本因子"></a>修改副本因子</h2><p>创建主题之后同样可以修改副本因子（副本数），具体可以通过<code>kafka-reassign-partition.sh</code>脚本实现。</p>
+
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%B8%BB%E9%A2%98%E7%AE%A1%E7%90%86"><span class="toc-number">1.</span> <span class="toc-text">主题管理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%9B%E5%BB%BA%E4%B8%BB%E9%A2%98"><span class="toc-number">1.1.</span> <span class="toc-text">创建主题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%9F%A5%E7%9C%8B%E4%B8%BB%E9%A2%98"><span class="toc-number">1.2.</span> <span class="toc-text">查看主题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E4%B8%BB%E9%A2%98"><span class="toc-number">1.3.</span> <span class="toc-text">修改主题</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%85%8D%E7%BD%AE%E7%AE%A1%E7%90%86"><span class="toc-number">1.4.</span> <span class="toc-text">配置管理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%A0%E9%99%A4%E4%B8%BB%E9%A2%98"><span class="toc-number">1.5.</span> <span class="toc-text">删除主题</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%88%86%E5%8C%BA%E7%AE%A1%E7%90%86"><span class="toc-number">2.</span> <span class="toc-text">分区管理</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BC%98%E5%85%88%E5%89%AF%E6%9C%AC%E9%80%89%E4%B8%BE"><span class="toc-number">2.1.</span> <span class="toc-text">优先副本选举</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%88%86%E5%8C%BA%E9%87%8D%E5%88%86%E9%85%8D"><span class="toc-number">2.2.</span> <span class="toc-text">分区重分配</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%A4%8D%E5%88%B6%E9%99%90%E6%B5%81"><span class="toc-number">2.3.</span> <span class="toc-text">复制限流</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BF%AE%E6%94%B9%E5%89%AF%E6%9C%AC%E5%9B%A0%E5%AD%90"><span class="toc-number">2.4.</span> <span class="toc-text">修改副本因子</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/05/29/kafka-05/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/05/29/kafka-05/&text=【Kafka】：主题与分区"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/05/29/kafka-05/&is_video=false&description=【Kafka】：主题与分区"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Kafka】：主题与分区&body=Check out this article: https://haifuns.com/2021/05/29/kafka-05/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/05/29/kafka-05/&title=【Kafka】：主题与分区"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/05/29/kafka-05/&name=【Kafka】：主题与分区&description=&lt;h1 id=&#34;主题管理&#34;&gt;&lt;a href=&#34;#主题管理&#34; class=&#34;headerlink&#34; title=&#34;主题管理&#34;&gt;&lt;/a&gt;主题管理&lt;/h1&gt;&lt;h2 id=&#34;创建主题&#34;&gt;&lt;a href=&#34;#创建主题&#34; class=&#34;headerlink&#34; title=&#34;创建主题&#34;&gt;&lt;/a&gt;创建主题&lt;/h2&gt;&lt;p&gt;如果broker端配置参数&lt;code&gt;auto.create.topics.enable&lt;/code&gt;设置为true（默认），当生产者向一个尚未创建的主题发送消息时，会自动创建一个分区数为&lt;code&gt;num.partitions&lt;/code&gt;（默认1）、副本数为&lt;code&gt;default.replication.factor&lt;/code&gt;（默认1）的主题。当一个消费者从一个未知主题中读取消息时，或者当任意客户端向未知主题发送元数据请求时，都会按照配置创建一个相应的主题。&lt;/p&gt;
+&lt;p&gt;不建议将&lt;code&gt;auto.create.topics.enable&lt;/code&gt;参数设置为true，推荐使用kafka-topic.sh脚本手动创建主题。&lt;/p&gt;
+&lt;p&gt;示例，创建分区数为4，副本数为3的主题topic-demo：&lt;/p&gt;
+&lt;figure class=&#34;highlight shell&#34;&gt;&lt;table&gt;&lt;tbody&gt;&lt;tr&gt;&lt;td class=&#34;gutter&#34;&gt;&lt;pre&gt;&lt;span class=&#34;line&#34;&gt;1&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;td class=&#34;code&#34;&gt;&lt;pre&gt;&lt;span class=&#34;line&#34;&gt;&lt;span class=&#34;meta&#34;&gt;$&lt;/span&gt;&lt;span class=&#34;bash&#34;&gt; kafka-topics.sh --zookeeper localhost:2181/kafka --create --topic topic-demo --replication-factor 3 --partitions 4&lt;/span&gt;&lt;/span&gt;&lt;br&gt;&lt;/pre&gt;&lt;/td&gt;&lt;/tr&gt;&lt;/tbody&gt;&lt;/table&gt;&lt;/figure&gt;
+
+&lt;p&gt;在执行完脚本之后，Kafka会在log.dir或者log.dirs参数所配置的目录下创建相应的主题分区，默认目录为/tmp/kafka-logs。&lt;/p&gt;"><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/05/29/kafka-05/&t=【Kafka】：主题与分区"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

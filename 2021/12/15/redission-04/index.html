@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="Redission支持可重入读写锁RReadWriteLock，允许同时有多个读锁或者一个写锁处于加锁状态。RReadWriteLock实现了juc.lock.ReadWriteLock接口，其中读锁和写锁都继承了RLock接口。 RReadWriteLock使用方法如下： 12345RReadWriteLock rwlock &#x3D; redisson.getReadWriteLock(&quot;anyRWL">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【Redission源码】读写锁源码解析">
+<meta property="og:url" content="https://haifuns.com/2021/12/15/redission-04/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="Redission支持可重入读写锁RReadWriteLock，允许同时有多个读锁或者一个写锁处于加锁状态。RReadWriteLock实现了juc.lock.ReadWriteLock接口，其中读锁和写锁都继承了RLock接口。 RReadWriteLock使用方法如下： 12345RReadWriteLock rwlock &#x3D; redisson.getReadWriteLock(&quot;anyRWL">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-14T16:15:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="Redission">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【Redission源码】读写锁源码解析</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2021/12/15/stringmatch-01/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2021/12/14/redission-03/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/15/redission-04/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/15/redission-04/&text=【Redission源码】读写锁源码解析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/15/redission-04/&is_video=false&description=【Redission源码】读写锁源码解析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】读写锁源码解析&body=Check out this article: https://haifuns.com/2021/12/15/redission-04/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/15/redission-04/&name=【Redission源码】读写锁源码解析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/15/redission-04/&t=【Redission源码】读写锁源码解析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%BB%E9%94%81"><span class="toc-number">1.</span> <span class="toc-text">读锁</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E8%AF%BB%E9%94%81"><span class="toc-number">1.1.</span> <span class="toc-text">加读锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#watchdog%E7%BB%B4%E6%8C%81%E8%AF%BB%E9%94%81"><span class="toc-number">1.2.</span> <span class="toc-text">watchdog维持读锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E9%94%81%E8%AF%BB%E9%94%81"><span class="toc-number">1.3.</span> <span class="toc-text">解锁读锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%99%E9%94%81"><span class="toc-number">2.</span> <span class="toc-text">写锁</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E5%86%99%E9%94%81"><span class="toc-number">2.1.</span> <span class="toc-text">加写锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#watchdog%E7%BB%B4%E6%8C%81%E5%86%99%E9%94%81"><span class="toc-number">2.2.</span> <span class="toc-text">watchdog维持写锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E9%94%81%E8%A7%A3%E9%94%81"><span class="toc-number">2.3.</span> <span class="toc-text">写锁解锁</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【Redission源码】读写锁源码解析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-12-14T16:15:00.000Z" class="dt-published" itemprop="datePublished">2021-12-15</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">分布式锁</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/Redission/" rel="tag">Redission</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>Redission支持可重入读写锁RReadWriteLock，允许同时有多个读锁或者一个写锁处于加锁状态。RReadWriteLock实现了juc.lock.ReadWriteLock接口，其中读锁和写锁都继承了RLock接口。</p>
+<p>RReadWriteLock使用方法如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">RReadWriteLock rwlock = redisson.getReadWriteLock(<span class="string">"anyRWLock"</span>);</span><br><span class="line"><span class="comment">// 最常见的使用方法</span></span><br><span class="line">rwlock.readLock().lock();</span><br><span class="line"><span class="comment">// 或</span></span><br><span class="line">rwlock.writeLock().lock();</span><br></pre></td></tr></tbody></table></figure>
+
+<p>为了解决死锁问题，在读写锁中依然使用看门狗机制不断延长有效期，默认超时时间为30秒。</p>
+<h1 id="读锁"><a href="#读锁" class="headerlink" title="读锁"></a>读锁</h1><h2 id="加读锁"><a href="#加读锁" class="headerlink" title="加读锁"></a>加读锁</h2><p>在Redission读写锁中，读锁在以下情况可以加锁成功：</p>
+<ol>
+<li>无锁或者其他线程只加过读锁</li>
+<li>同一个线程重复加读锁</li>
+<li><strong>同一线程先加写锁后加读锁</strong></li>
+</ol>
+<p>与可重入锁相比，读写锁锁结构有所不同，hash中存在一个标记锁模式的field以及多个标记加锁线程的field，所以在读锁加锁时，lua脚本存在差异：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><span class="line">&lt;T&gt; <span class="function">RFuture&lt;T&gt; <span class="title">tryLockInnerAsync</span><span class="params">(<span class="keyword">long</span> waitTime, <span class="keyword">long</span> leaseTime, TimeUnit unit, <span class="keyword">long</span> threadId, RedisStrictCommand&lt;T&gt; command)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,</span><br><span class="line">                            <span class="comment">// 读锁情况锁结构</span></span><br><span class="line">                            <span class="comment">// 1. 两个线程加读锁，"lock1": {"mode": "read", "uuid1:thread1": 1, "uuid1:thread1": 1}</span></span><br><span class="line">                            <span class="comment">// 2. 同一个线程重入加读锁，"lock1": {"mode": "read", "uuid1:thread1": 1, "uuid1:thread1": 2}</span></span><br><span class="line">                            <span class="comment">// 3. 同一个线程先加写锁后加读锁 **，"lock1": {"mode": "read", "uuid1:thread1": 1, "uuid1:thread1:write": 1}</span></span><br><span class="line"></span><br><span class="line">                            <span class="comment">// hash key=lock name 锁名，field=mode 锁模式</span></span><br><span class="line">                            <span class="string">"local mode = redis.call('hget', KEYS[1], 'mode'); "</span> +</span><br><span class="line">                            <span class="comment">// 如果模式为空，说明没有加过读写锁</span></span><br><span class="line">                            <span class="string">"if (mode == false) then "</span> +</span><br><span class="line">                              <span class="comment">// 设置模式为读锁</span></span><br><span class="line">                              <span class="string">"redis.call('hset', KEYS[1], 'mode', 'read'); "</span> +</span><br><span class="line">                              <span class="comment">// 新增锁，hash key=lock name，field=uuid:threadId，value=1</span></span><br><span class="line">                              <span class="string">"redis.call('hset', KEYS[1], ARGV[2], 1); "</span> +</span><br><span class="line">                              <span class="comment">// 新增一个读锁标记 key={lock name}:uuid:threadId:rwlock_timeout:1，value=1</span></span><br><span class="line">                              <span class="string">"redis.call('set', KEYS[2] .. ':1', 1); "</span> +</span><br><span class="line">                              <span class="comment">// 设置过期时间，默认30秒</span></span><br><span class="line">                              <span class="string">"redis.call('pexpire', KEYS[2] .. ':1', ARGV[1]); "</span> +</span><br><span class="line">                              <span class="string">"redis.call('pexpire', KEYS[1], ARGV[1]); "</span> +</span><br><span class="line">                              <span class="string">"return nil; "</span> +</span><br><span class="line">                            <span class="string">"end; "</span> +</span><br><span class="line">                            <span class="comment">// 如果是读锁模式，或者是当前线程加的写锁</span></span><br><span class="line">                            <span class="string">"if (mode == 'read') or (mode == 'write' and redis.call('hexists', KEYS[1], ARGV[3]) == 1) then "</span> +</span><br><span class="line">                              <span class="comment">// 重入锁，field=uuid:threadId，值加1</span></span><br><span class="line">                              <span class="comment">// 这里hash key是可以设置多个lock field，也就是可以加多个读锁</span></span><br><span class="line">                              <span class="string">"local ind = redis.call('hincrby', KEYS[1], ARGV[2], 1); "</span> + </span><br><span class="line">                              <span class="comment">// {lock name}:uuid:threadId:rwlock_timeout:锁重入次数</span></span><br><span class="line">                              <span class="string">"local key = KEYS[2] .. ':' .. ind;"</span> +</span><br><span class="line">                              <span class="comment">// 设置重入标记 {lock name}:uuid:threadId:rwlock_timeout:当前重入次数</span></span><br><span class="line">                              <span class="string">"redis.call('set', key, 1); "</span> +</span><br><span class="line">                              <span class="string">"redis.call('pexpire', key, ARGV[1]); "</span> +</span><br><span class="line">                              <span class="string">"local remainTime = redis.call('pttl', KEYS[1]); "</span> +</span><br><span class="line">                              <span class="comment">// 更新过期时间</span></span><br><span class="line">                              <span class="string">"redis.call('pexpire', KEYS[1], math.max(remainTime, ARGV[1])); "</span> +</span><br><span class="line">                              <span class="string">"return nil; "</span> +</span><br><span class="line">                            <span class="string">"end;"</span> +</span><br><span class="line">                            <span class="string">"return redis.call('pttl', KEYS[1]);"</span>,</span><br><span class="line">                    <span class="comment">// KEY[1] lock name，KEY[2] {lock name}:uuid:threadId:rwlock_timeout</span></span><br><span class="line">                    Arrays.&lt;Object&gt;asList(getRawName(), getReadWriteTimeoutNamePrefix(threadId)),</span><br><span class="line">                    <span class="comment">// ARGV[1] 超时时间 默认30秒，ARGV[2] uuid:threadId，ARGV[3] uuid:threadId:write</span></span><br><span class="line">                    unit.toMillis(leaseTime), getLockName(threadId), getWriteLockName(threadId));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="watchdog维持读锁"><a href="#watchdog维持读锁" class="headerlink" title="watchdog维持读锁"></a>watchdog维持读锁</h2><p>由于读写锁结构不同于一般可重入锁，所以watchdog维持锁的lua脚本也有所不同：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> RFuture&lt;Boolean&gt; <span class="title">renewExpirationAsync</span><span class="params">(<span class="keyword">long</span> threadId)</span> </span>{</span><br><span class="line">    String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);</span><br><span class="line">    String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);</span><br><span class="line">    </span><br><span class="line">    <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">            <span class="comment">// 获取重入次数</span></span><br><span class="line">            <span class="string">"local counter = redis.call('hget', KEYS[1], ARGV[2]); "</span> +</span><br><span class="line">            <span class="string">"if (counter ~= false) then "</span> +</span><br><span class="line">                <span class="comment">// 不为空说明正常加锁，更新锁过期时间</span></span><br><span class="line">                <span class="string">"redis.call('pexpire', KEYS[1], ARGV[1]); "</span> +</span><br><span class="line">                </span><br><span class="line">                <span class="string">"if (redis.call('hlen', KEYS[1]) &gt; 1) then "</span> +</span><br><span class="line">                    <span class="string">"local keys = redis.call('hkeys', KEYS[1]); "</span> + </span><br><span class="line">                    <span class="string">"for n, key in ipairs(keys) do "</span> + </span><br><span class="line">                        <span class="comment">// 遍历锁hash所有field，找到uuid:threadId的值，也即重入次数</span></span><br><span class="line">                        <span class="string">"counter = tonumber(redis.call('hget', KEYS[1], key)); "</span> + </span><br><span class="line">                        <span class="string">"if type(counter) == 'number' then "</span> + </span><br><span class="line">                            <span class="string">"for i=counter, 1, -1 do "</span> + </span><br><span class="line">                                <span class="comment">// 重置所有重入标记过期时间</span></span><br><span class="line">                                <span class="string">"redis.call('pexpire', KEYS[2] .. ':' .. key .. ':rwlock_timeout:' .. i, ARGV[1]); "</span> + </span><br><span class="line">                            <span class="string">"end; "</span> + </span><br><span class="line">                        <span class="string">"end; "</span> + </span><br><span class="line">                    <span class="string">"end; "</span> +</span><br><span class="line">                <span class="string">"end; "</span> +</span><br><span class="line">                </span><br><span class="line">                <span class="string">"return 1; "</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">            <span class="string">"return 0;"</span>,</span><br><span class="line">        <span class="comment">// KEY[1] lock name，KEY[2] {lock name}:uuid:threadId</span></span><br><span class="line">        Arrays.&lt;Object&gt;asList(getRawName(), keyPrefix),</span><br><span class="line">        <span class="comment">// ARGV[1] 默认超时时间30秒，ARGV[2] uuid:threadId</span></span><br><span class="line">        internalLockLeaseTime, getLockName(threadId));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="解锁读锁"><a href="#解锁读锁" class="headerlink" title="解锁读锁"></a>解锁读锁</h2><p>在读锁进行解锁时，需要删除或者减少当前线程读锁重入次数，并且更新过期时间：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> RFuture&lt;Boolean&gt; <span class="title">unlockInnerAsync</span><span class="params">(<span class="keyword">long</span> threadId)</span> </span>{</span><br><span class="line">    String timeoutPrefix = getReadWriteTimeoutNamePrefix(threadId);</span><br><span class="line">    String keyPrefix = getKeyPrefix(threadId, timeoutPrefix);</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">            <span class="comment">// 获取锁模式</span></span><br><span class="line">            <span class="string">"local mode = redis.call('hget', KEYS[1], 'mode'); "</span> +</span><br><span class="line">            <span class="string">"if (mode == false) then "</span> +</span><br><span class="line">                <span class="comment">// 模式不存在说明锁不存在，直接发布解锁消息，返回成功</span></span><br><span class="line">                <span class="string">"redis.call('publish', KEYS[2], ARGV[1]); "</span> +</span><br><span class="line">                <span class="string">"return 1; "</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">            <span class="comment">// 获取当前线程持有锁重入次数</span></span><br><span class="line">            <span class="string">"local lockExists = redis.call('hexists', KEYS[1], ARGV[2]); "</span> +</span><br><span class="line">            <span class="string">"if (lockExists == 0) then "</span> +</span><br><span class="line">                <span class="string">"return nil;"</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">                </span><br><span class="line">            <span class="comment">// 重入次数 - 1</span></span><br><span class="line">            <span class="string">"local counter = redis.call('hincrby', KEYS[1], ARGV[2], -1); "</span> + </span><br><span class="line">            <span class="string">"if (counter == 0) then "</span> +</span><br><span class="line">                <span class="comment">// 如果解锁前只重入了一次，说明可以解锁了，直接删除field</span></span><br><span class="line">                <span class="string">"redis.call('hdel', KEYS[1], ARGV[2]); "</span> + </span><br><span class="line">            <span class="string">"end;"</span> +</span><br><span class="line">            <span class="comment">// 删除标记 {lock name}:uuid:threadId:rwlock_timeout:最后一次重入</span></span><br><span class="line">            <span class="string">"redis.call('del', KEYS[3] .. ':' .. (counter+1)); "</span> +</span><br><span class="line">            </span><br><span class="line">            <span class="comment">// 如果hash中的字段数量大于1</span></span><br><span class="line">            <span class="string">"if (redis.call('hlen', KEYS[1]) &gt; 1) then "</span> +</span><br><span class="line">                <span class="string">"local maxRemainTime = -3; "</span> + </span><br><span class="line">                <span class="comment">// 获得hash key = lock name所有field</span></span><br><span class="line">                <span class="string">"local keys = redis.call('hkeys', KEYS[1]); "</span> + </span><br><span class="line">                <span class="string">"for n, key in ipairs(keys) do "</span> + </span><br><span class="line">                    <span class="comment">// 遍历field，就是在找field = uuid:threadId，得到重入次数</span></span><br><span class="line">                    <span class="string">"counter = tonumber(redis.call('hget', KEYS[1], key)); "</span> + </span><br><span class="line">                    <span class="string">"if type(counter) == 'number' then "</span> + </span><br><span class="line">                        <span class="string">"for i=counter, 1, -1 do "</span> + </span><br><span class="line">                            <span class="comment">// 从1开始遍历到重入次数，得到所有{lock name}:uuid:threadId:rwlock_timeout:x的过期时间</span></span><br><span class="line">                            <span class="string">"local remainTime = redis.call('pttl', KEYS[4] .. ':' .. key .. ':rwlock_timeout:' .. i); "</span> + </span><br><span class="line">                            <span class="comment">// 找到所有重入标记中ttl最大值</span></span><br><span class="line">                            <span class="string">"maxRemainTime = math.max(remainTime, maxRemainTime);"</span> + </span><br><span class="line">                        <span class="string">"end; "</span> + </span><br><span class="line">                    <span class="string">"end; "</span> + </span><br><span class="line">                <span class="string">"end; "</span> +</span><br><span class="line">                        </span><br><span class="line">                <span class="comment">// 如果所有重入标记最大超时时间大于0，说明锁还有重入次数</span></span><br><span class="line">                <span class="string">"if maxRemainTime &gt; 0 then "</span> +</span><br><span class="line">                    <span class="comment">// 把标记的最大过期时间设置给锁</span></span><br><span class="line">                    <span class="string">"redis.call('pexpire', KEYS[1], maxRemainTime); "</span> +</span><br><span class="line">                    <span class="string">"return 0; "</span> +</span><br><span class="line">                <span class="string">"end;"</span> + </span><br><span class="line">                    </span><br><span class="line">                <span class="comment">// 如果模式为写锁，直接返回失败</span></span><br><span class="line">                <span class="string">"if mode == 'write' then "</span> + </span><br><span class="line">                    <span class="string">"return 0;"</span> + </span><br><span class="line">                <span class="string">"end; "</span> +</span><br><span class="line">            <span class="string">"end; "</span> +</span><br><span class="line">                </span><br><span class="line">            <span class="comment">// 否则，说明可以解锁，直接删除锁，发布一条解锁消息</span></span><br><span class="line">            <span class="string">"redis.call('del', KEYS[1]); "</span> +</span><br><span class="line">            <span class="string">"redis.call('publish', KEYS[2], ARGV[1]); "</span> +</span><br><span class="line">            <span class="string">"return 1; "</span>,</span><br><span class="line">            <span class="comment">// key[1] lock name，key[2] redisson_rwlock:{lock name}，key[3] {lock name}:uuid:threadId:rwlock_timeout，key[4] {lock name}:uuid:threadId</span></span><br><span class="line">            Arrays.&lt;Object&gt;asList(getRawName(), getChannelName(), timeoutPrefix, keyPrefix),</span><br><span class="line">            <span class="comment">// ARGV[1] 解锁消息通道，ARGV[2] uuid:threadId</span></span><br><span class="line">            LockPubSub.UNLOCK_MESSAGE, getLockName(threadId));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="写锁"><a href="#写锁" class="headerlink" title="写锁"></a>写锁</h1><p>Redission的读写锁中，写锁只有在以下情况才能加锁成功：</p>
+<ol>
+<li>没有任何线程加过锁</li>
+<li>同一个线程重复加写锁</li>
+</ol>
+<h2 id="加写锁"><a href="#加写锁" class="headerlink" title="加写锁"></a>加写锁</h2><p>加写锁时相对简单，只需要判断是否加过锁、是否是当前线程加过写锁：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><span class="line">&lt;T&gt; <span class="function">RFuture&lt;T&gt; <span class="title">tryLockInnerAsync</span><span class="params">(<span class="keyword">long</span> waitTime, <span class="keyword">long</span> leaseTime, TimeUnit unit, <span class="keyword">long</span> threadId, RedisStrictCommand&lt;T&gt; command)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, command,</span><br><span class="line">                        <span class="comment">// 写锁情况锁结构</span></span><br><span class="line">                        <span class="comment">// 1. 无锁加写锁，"lock1": {"mode": "write", "uuid1:thread1:write": 1}</span></span><br><span class="line">                        <span class="comment">// 2. 同一个线程重入加写锁，"lock1": {"mode": "write", "uuid1:thread1:write": 2}</span></span><br><span class="line"></span><br><span class="line">                        <span class="comment">// 获取锁的模式</span></span><br><span class="line">                        <span class="string">"local mode = redis.call('hget', KEYS[1], 'mode'); "</span> +</span><br><span class="line">                        <span class="comment">// 如果获取不到说明没加过锁，直接添加锁、设置写锁模式、设置过期时间</span></span><br><span class="line">                        <span class="string">"if (mode == false) then "</span> +</span><br><span class="line">                              <span class="string">"redis.call('hset', KEYS[1], 'mode', 'write'); "</span> +</span><br><span class="line">                              <span class="comment">// hash key = lock name，field = uuid:threadId:write</span></span><br><span class="line">                              <span class="string">"redis.call('hset', KEYS[1], ARGV[2], 1); "</span> +</span><br><span class="line">                              <span class="string">"redis.call('pexpire', KEYS[1], ARGV[1]); "</span> +</span><br><span class="line">                              <span class="string">"return nil; "</span> +</span><br><span class="line">                          <span class="string">"end; "</span> +</span><br><span class="line">                          <span class="comment">// 如果锁的模式是写锁</span></span><br><span class="line">                          <span class="string">"if (mode == 'write') then "</span> +</span><br><span class="line">                              <span class="comment">// 如果写锁是当前线程加的，那么就把重入次数加1，更新过期时间</span></span><br><span class="line">                              <span class="string">"if (redis.call('hexists', KEYS[1], ARGV[2]) == 1) then "</span> +</span><br><span class="line">                                  <span class="string">"redis.call('hincrby', KEYS[1], ARGV[2], 1); "</span> + </span><br><span class="line">                                  <span class="string">"local currentExpire = redis.call('pttl', KEYS[1]); "</span> +</span><br><span class="line">                                  <span class="string">"redis.call('pexpire', KEYS[1], currentExpire + ARGV[1]); "</span> +</span><br><span class="line">                                  <span class="string">"return nil; "</span> +</span><br><span class="line">                              <span class="string">"end; "</span> +</span><br><span class="line">                            <span class="string">"end;"</span> +</span><br><span class="line">                            <span class="comment">// 其他情况加锁失败，返回过期时间</span></span><br><span class="line">                            <span class="string">"return redis.call('pttl', KEYS[1]);"</span>,</span><br><span class="line">                    <span class="comment">// KEY[1] lock name</span></span><br><span class="line">                    Arrays.&lt;Object&gt;asList(getRawName()),</span><br><span class="line">                    <span class="comment">// ARGV[1] 过期时间，ARGV[2] uuid:threadId:write</span></span><br><span class="line">                    unit.toMillis(leaseTime), getLockName(threadId));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="watchdog维持写锁"><a href="#watchdog维持写锁" class="headerlink" title="watchdog维持写锁"></a>watchdog维持写锁</h2><p>写锁结构与普通可重入锁结构一致，watchdog机制同RedissonLock，不再复述。</p>
+<h2 id="写锁解锁"><a href="#写锁解锁" class="headerlink" title="写锁解锁"></a>写锁解锁</h2><p>当只有写锁解锁时，要么直接删除锁，要么减少写锁重入次数并且更新过期时间。当既有写锁又有读锁时，锁模式为写锁模式，在需要删除写锁时，还需要把锁模式转变为读模式。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">protected</span> RFuture&lt;Boolean&gt; <span class="title">unlockInnerAsync</span><span class="params">(<span class="keyword">long</span> threadId)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">            <span class="comment">// 查询锁模式</span></span><br><span class="line">            <span class="string">"local mode = redis.call('hget', KEYS[1], 'mode'); "</span> +</span><br><span class="line">            <span class="string">"if (mode == false) then "</span> +</span><br><span class="line">                <span class="comment">// 如果锁不存在，直接发布解锁消息</span></span><br><span class="line">                <span class="string">"redis.call('publish', KEYS[2], ARGV[1]); "</span> +</span><br><span class="line">                <span class="string">"return 1; "</span> +</span><br><span class="line">            <span class="string">"end;"</span> +</span><br><span class="line">            <span class="comment">// 如果模式是写锁</span></span><br><span class="line">            <span class="string">"if (mode == 'write') then "</span> +</span><br><span class="line">                <span class="comment">// 查看当前线程加的写锁重入次数</span></span><br><span class="line">                <span class="string">"local lockExists = redis.call('hexists', KEYS[1], ARGV[3]); "</span> +</span><br><span class="line">                <span class="comment">// 如果是空，直接返回</span></span><br><span class="line">                <span class="string">"if (lockExists == 0) then "</span> +</span><br><span class="line">                    <span class="string">"return nil;"</span> +</span><br><span class="line">                <span class="string">"else "</span> +</span><br><span class="line">                    <span class="comment">// 如果写锁重入次数不是空，直接减1</span></span><br><span class="line">                    <span class="string">"local counter = redis.call('hincrby', KEYS[1], ARGV[3], -1); "</span> +</span><br><span class="line">                    <span class="string">"if (counter &gt; 0) then "</span> +</span><br><span class="line">                        <span class="comment">// 如果可重入了多次，更新过期时间返回</span></span><br><span class="line">                        <span class="string">"redis.call('pexpire', KEYS[1], ARGV[2]); "</span> +</span><br><span class="line">                        <span class="string">"return 0; "</span> +</span><br><span class="line">                    <span class="string">"else "</span> +</span><br><span class="line">                        <span class="comment">// 如果只加了一次读锁，当前解锁写锁后还有可能存在读锁，需要把加锁模式转换为读锁</span></span><br><span class="line">                        </span><br><span class="line">                        <span class="comment">// 直接删除写锁 </span></span><br><span class="line">                        <span class="string">"redis.call('hdel', KEYS[1], ARGV[3]); "</span> +</span><br><span class="line">                        <span class="comment">// 如果hash里只剩下field mode，直接删除锁</span></span><br><span class="line">                        <span class="string">"if (redis.call('hlen', KEYS[1]) == 1) then "</span> +</span><br><span class="line">                            <span class="string">"redis.call('del', KEYS[1]); "</span> +</span><br><span class="line">                            <span class="string">"redis.call('publish', KEYS[2], ARGV[1]); "</span> + </span><br><span class="line">                        <span class="string">"else "</span> +</span><br><span class="line">                            <span class="comment">// 如果hash里field大于1，把锁模式修改为读锁</span></span><br><span class="line">                            <span class="comment">// has unlocked read-locks</span></span><br><span class="line">                            <span class="string">"redis.call('hset', KEYS[1], 'mode', 'read'); "</span> +</span><br><span class="line">                        <span class="string">"end; "</span> +</span><br><span class="line">                        <span class="string">"return 1; "</span>+</span><br><span class="line">                    <span class="string">"end; "</span> +</span><br><span class="line">                <span class="string">"end; "</span> +</span><br><span class="line">            <span class="string">"end; "</span></span><br><span class="line">            + <span class="string">"return nil;"</span>,</span><br><span class="line">            <span class="comment">// KEY[1] lock name，KEY[2] redisson_rwlock:{lock name}</span></span><br><span class="line">    Arrays.&lt;Object&gt;asList(getRawName(), getChannelName()),</span><br><span class="line">    <span class="comment">// ARGV[1] 解锁标记，ARGV[2] 过期时间，ARGV[3] uuid:thread:write</span></span><br><span class="line">    LockPubSub.READ_UNLOCK_MESSAGE, internalLockLeaseTime, getLockName(threadId));</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E8%AF%BB%E9%94%81"><span class="toc-number">1.</span> <span class="toc-text">读锁</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E8%AF%BB%E9%94%81"><span class="toc-number">1.1.</span> <span class="toc-text">加读锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#watchdog%E7%BB%B4%E6%8C%81%E8%AF%BB%E9%94%81"><span class="toc-number">1.2.</span> <span class="toc-text">watchdog维持读锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%A7%A3%E9%94%81%E8%AF%BB%E9%94%81"><span class="toc-number">1.3.</span> <span class="toc-text">解锁读锁</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%99%E9%94%81"><span class="toc-number">2.</span> <span class="toc-text">写锁</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8A%A0%E5%86%99%E9%94%81"><span class="toc-number">2.1.</span> <span class="toc-text">加写锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#watchdog%E7%BB%B4%E6%8C%81%E5%86%99%E9%94%81"><span class="toc-number">2.2.</span> <span class="toc-text">watchdog维持写锁</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%86%99%E9%94%81%E8%A7%A3%E9%94%81"><span class="toc-number">2.3.</span> <span class="toc-text">写锁解锁</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/15/redission-04/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/15/redission-04/&text=【Redission源码】读写锁源码解析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/15/redission-04/&is_video=false&description=【Redission源码】读写锁源码解析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】读写锁源码解析&body=Check out this article: https://haifuns.com/2021/12/15/redission-04/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/15/redission-04/&title=【Redission源码】读写锁源码解析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/15/redission-04/&name=【Redission源码】读写锁源码解析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/15/redission-04/&t=【Redission源码】读写锁源码解析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>

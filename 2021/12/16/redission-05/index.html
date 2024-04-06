@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="信号量 SemaphoreRedisson提供分布式信号量，接口和用法与juc.Semaphore相似，使用方式如下： 12345678910111213141516RSemaphore semaphore &#x3D; redisson.getSemaphore(&quot;semaphore&quot;);semaphore.addPermits(10);semaphore.acquire();&#x2F;&#x2F;或semaphore.a">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【Redission源码】信号量&amp;闭锁源码解析">
+<meta property="og:url" content="https://haifuns.com/2021/12/16/redission-05/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="信号量 SemaphoreRedisson提供分布式信号量，接口和用法与juc.Semaphore相似，使用方式如下： 12345678910111213141516RSemaphore semaphore &#x3D; redisson.getSemaphore(&quot;semaphore&quot;);semaphore.addPermits(10);semaphore.acquire();&#x2F;&#x2F;或semaphore.a">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2021-12-15T16:20:00.000Z">
+<meta property="article:modified_time" content="2024-04-06T04:47:59.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="Redission">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【Redission源码】信号量&amp;闭锁源码解析</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        <li><a class="icon" aria-label="上一篇" href="/2021/12/21/stringmatch-03/"><i class="fa-solid fa-chevron-left" aria-hidden="true" onmouseover="$('#i-prev').toggle();" onmouseout="$('#i-prev').toggle();"></i></a></li>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2021/12/15/stringmatch-02/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/16/redission-05/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/16/redission-05/&text=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/16/redission-05/&is_video=false&description=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】信号量&amp;闭锁源码解析&body=Check out this article: https://haifuns.com/2021/12/16/redission-05/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/16/redission-05/&name=【Redission源码】信号量&amp;闭锁源码解析&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/16/redission-05/&t=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F-Semaphore"><span class="toc-number">1.</span> <span class="toc-text">信号量 Semaphore</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B0%E5%A2%9E%E5%87%AD%E8%AF%81"><span class="toc-number">1.1.</span> <span class="toc-text">新增凭证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%87%AD%E8%AF%81"><span class="toc-number">1.2.</span> <span class="toc-text">获取凭证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%8A%E6%94%BE%E5%87%AD%E8%AF%81"><span class="toc-number">1.3.</span> <span class="toc-text">释放凭证</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%97%AD%E9%94%81-CountDownLatch"><span class="toc-number">2.</span> <span class="toc-text">闭锁 CountDownLatch</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E8%AE%A1%E6%95%B0%E5%99%A8%E5%80%BC"><span class="toc-number">2.1.</span> <span class="toc-text">设置计数器值</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E8%AE%A1%E6%95%B0%E5%99%A8%E5%80%BC"><span class="toc-number">2.2.</span> <span class="toc-text">减少计数器值</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AD%89%E5%BE%85%E8%AE%A1%E6%95%B0%E5%99%A8%E5%80%BC%E8%BE%BE%E5%88%B00"><span class="toc-number">2.3.</span> <span class="toc-text">等待计数器值达到0</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【Redission源码】信号量&amp;闭锁源码解析
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2021-12-15T16:20:00.000Z" class="dt-published" itemprop="datePublished">2021-12-16</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E5%88%86%E5%B8%83%E5%BC%8F%E9%94%81/">分布式锁</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/Redission/" rel="tag">Redission</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <h1 id="信号量-Semaphore"><a href="#信号量-Semaphore" class="headerlink" title="信号量 Semaphore"></a>信号量 Semaphore</h1><p>Redisson提供分布式信号量，接口和用法与juc.Semaphore相似，使用方式如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line">RSemaphore semaphore = redisson.getSemaphore(<span class="string">"semaphore"</span>);</span><br><span class="line">semaphore.addPermits(<span class="number">10</span>);</span><br><span class="line">semaphore.acquire();</span><br><span class="line"><span class="comment">//或</span></span><br><span class="line">semaphore.acquireAsync();</span><br><span class="line">semaphore.acquire(<span class="number">23</span>);</span><br><span class="line">semaphore.tryAcquire();</span><br><span class="line"><span class="comment">//或</span></span><br><span class="line">semaphore.tryAcquireAsync();</span><br><span class="line">semaphore.tryAcquire(<span class="number">23</span>, TimeUnit.SECONDS);</span><br><span class="line"><span class="comment">//或</span></span><br><span class="line">semaphore.tryAcquireAsync(<span class="number">23</span>, TimeUnit.SECONDS);</span><br><span class="line">semaphore.release(<span class="number">10</span>);</span><br><span class="line">semaphore.release();</span><br><span class="line"><span class="comment">//或</span></span><br><span class="line">semaphore.releaseAsync();</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="新增凭证"><a href="#新增凭证" class="headerlink" title="新增凭证"></a>新增凭证</h2><p>添加凭证实际上就是给redis中的key设置一个值。核心方法如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RFuture&lt;Void&gt; <span class="title">addPermitsAsync</span><span class="params">(<span class="keyword">int</span> permits)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_VOID,</span><br><span class="line">            <span class="string">"local value = redis.call('get', KEYS[1]); "</span> +</span><br><span class="line">            <span class="string">"if (value == false) then "</span></span><br><span class="line">              + <span class="string">"value = 0;"</span></span><br><span class="line">          + <span class="string">"end;"</span></span><br><span class="line">          + <span class="string">"redis.call('set', KEYS[1], value + ARGV[1]); "</span></span><br><span class="line">          + <span class="string">"redis.call('publish', KEYS[2], value + ARGV[1]); "</span>,</span><br><span class="line">            Arrays.asList(getRawName(), getChannelName()), permits);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="获取凭证"><a href="#获取凭证" class="headerlink" title="获取凭证"></a>获取凭证</h2><p>获取凭证时，只需判断剩余凭证大于要申请的凭证数量即可申请成功，如果获取失败就订阅凭证释放消息，收到释放凭证消息后循环获取。获取凭证核心方法如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RFuture&lt;Boolean&gt; <span class="title">tryAcquireAsync</span><span class="params">(<span class="keyword">int</span> permits)</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (permits &lt; <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Permits amount can't be negative"</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (permits == <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">return</span> RedissonPromise.newSucceededFuture(<span class="keyword">true</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">              <span class="comment">// 查询信号量</span></span><br><span class="line">              <span class="string">"local value = redis.call('get', KEYS[1]); "</span> +</span><br><span class="line">              <span class="comment">// 如果存在，并且剩余数量大于申请的数量</span></span><br><span class="line">              <span class="string">"if (value ~= false and tonumber(value) &gt;= tonumber(ARGV[1])) then "</span> +</span><br><span class="line">                  <span class="comment">// 扣减申请的数量，返回成功</span></span><br><span class="line">                  <span class="string">"local val = redis.call('decrby', KEYS[1], ARGV[1]); "</span> +</span><br><span class="line">                  <span class="string">"return 1; "</span> +</span><br><span class="line">              <span class="string">"end; "</span> +</span><br><span class="line">              <span class="comment">// 否则返回失败</span></span><br><span class="line">              <span class="string">"return 0;"</span>,</span><br><span class="line">              <span class="comment">// KEY[1] 信号量名称，KEY[2] 信号数量</span></span><br><span class="line">              Collections.&lt;Object&gt;singletonList(getRawName()), permits);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="释放凭证"><a href="#释放凭证" class="headerlink" title="释放凭证"></a>释放凭证</h2><p>释放凭证时直接给信号量增加相应数量的凭证，然后发布一条释放凭证的消息通知订阅的等待线程。释放凭证核心方法如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RFuture&lt;Void&gt; <span class="title">releaseAsync</span><span class="params">(<span class="keyword">int</span> permits)</span> </span>{</span><br><span class="line">    <span class="keyword">if</span> (permits &lt; <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">throw</span> <span class="keyword">new</span> IllegalArgumentException(<span class="string">"Permits amount can't be negative"</span>);</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">if</span> (permits == <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">return</span> RedissonPromise.newSucceededFuture(<span class="keyword">null</span>);</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    RFuture&lt;Void&gt; future = commandExecutor.evalWriteAsync(getRawName(), StringCodec.INSTANCE, RedisCommands.EVAL_VOID,</span><br><span class="line">            <span class="comment">// 直接给信号量加释放的个数</span></span><br><span class="line">            <span class="string">"local value = redis.call('incrby', KEYS[1], ARGV[1]); "</span> +</span><br><span class="line">                    <span class="comment">// 发布一条释放信号消息给等待的线程</span></span><br><span class="line">                    <span class="string">"redis.call('publish', KEYS[2], value); "</span>,</span><br><span class="line">            Arrays.asList(getRawName(), getChannelName()), permits);</span><br><span class="line">    <span class="keyword">if</span> (log.isDebugEnabled()) {</span><br><span class="line">        future.onComplete((o, e) -&gt; {</span><br><span class="line">            <span class="keyword">if</span> (e == <span class="keyword">null</span>) {</span><br><span class="line">                log.debug(<span class="string">"released, permits: {}, name: {}"</span>, permits, getName());</span><br><span class="line">            }</span><br><span class="line">        });</span><br><span class="line">    }</span><br><span class="line">    <span class="keyword">return</span> future;</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h1 id="闭锁-CountDownLatch"><a href="#闭锁-CountDownLatch" class="headerlink" title="闭锁 CountDownLatch"></a>闭锁 CountDownLatch</h1><p>Redission提供闭锁功能，接口和用法与juc.CountDownLatch相似，使用方式如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">RCountDownLatch latch = redisson.getCountDownLatch(<span class="string">"anyCountDownLatch"</span>);</span><br><span class="line">latch.trySetCount(<span class="number">1</span>);</span><br><span class="line">latch.await();</span><br><span class="line"></span><br><span class="line"><span class="comment">// 在其他线程或其他JVM里</span></span><br><span class="line">RCountDownLatch latch = redisson.getCountDownLatch(<span class="string">"anyCountDownLatch"</span>);</span><br><span class="line">latch.countDown();</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="设置计数器值"><a href="#设置计数器值" class="headerlink" title="设置计数器值"></a>设置计数器值</h2><p>CountDownLatch计数器值只有在未设置过才能设置成功，Redission提供的CountDownLatch设置计数器值核心方法如下：</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RFuture&lt;Boolean&gt; <span class="title">trySetCountAsync</span><span class="params">(<span class="keyword">long</span> count)</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> commandExecutor.evalWriteAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">            <span class="comment">// 如果CountDownLatch name不存在</span></span><br><span class="line">            <span class="string">"if redis.call('exists', KEYS[1]) == 0 then "</span></span><br><span class="line">                <span class="comment">// 新增CountDownLatch</span></span><br><span class="line">                + <span class="string">"redis.call('set', KEYS[1], ARGV[2]); "</span></span><br><span class="line">                <span class="comment">// 发布一条新增计数器的消息</span></span><br><span class="line">                + <span class="string">"redis.call('publish', KEYS[2], ARGV[1]); "</span></span><br><span class="line">                + <span class="string">"return 1 "</span></span><br><span class="line">            <span class="comment">// 存在直接返回失败</span></span><br><span class="line">            + <span class="string">"else "</span></span><br><span class="line">                + <span class="string">"return 0 "</span></span><br><span class="line">            + <span class="string">"end"</span>,</span><br><span class="line">            Arrays.&lt;Object&gt;asList(getRawName(), getChannelName()), CountDownLatchPubSub.NEW_COUNT_MESSAGE, count);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="减少计数器值"><a href="#减少计数器值" class="headerlink" title="减少计数器值"></a>减少计数器值</h2><figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> RFuture&lt;Void&gt; <span class="title">countDownAsync</span><span class="params">()</span> </span>{</span><br><span class="line">    <span class="keyword">return</span> commandExecutor.evalWriteNoRetryAsync(getRawName(), LongCodec.INSTANCE, RedisCommands.EVAL_BOOLEAN,</span><br><span class="line">                    <span class="comment">// 减少CountDownLatch计数器数量</span></span><br><span class="line">                    <span class="string">"local v = redis.call('decr', KEYS[1]);"</span> +</span><br><span class="line">                    <span class="comment">// 如果剩余的计数器小于0就直接删除</span></span><br><span class="line">                    <span class="string">"if v &lt;= 0 then redis.call('del', KEYS[1]) end;"</span> +</span><br><span class="line">                    <span class="comment">// 如果剩余计数器等于0，就发布一条计数器为零的消息通知订阅的线程</span></span><br><span class="line">                    <span class="string">"if v == 0 then redis.call('publish', KEYS[2], ARGV[1]) end;"</span>,</span><br><span class="line">                Arrays.&lt;Object&gt;asList(getRawName(), getChannelName()), CountDownLatchPubSub.ZERO_COUNT_MESSAGE);</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+
+<h2 id="等待计数器值达到0"><a href="#等待计数器值达到0" class="headerlink" title="等待计数器值达到0"></a>等待计数器值达到0</h2><p>当某一个线程调用awite方法时，线程会阻塞直到CountDownLatch计数器被扣减为1，实际上就是不断循环查询计数器值，直到为0时返回。</p>
+<figure class="highlight java"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">public</span> <span class="keyword">void</span> <span class="title">await</span><span class="params">()</span> <span class="keyword">throws</span> InterruptedException </span>{</span><br><span class="line">    <span class="comment">// 如果计数器为0直接返回</span></span><br><span class="line">    <span class="keyword">if</span> (getCount() == <span class="number">0</span>) {</span><br><span class="line">        <span class="keyword">return</span>;</span><br><span class="line">    }</span><br><span class="line"></span><br><span class="line">    RFuture&lt;RedissonCountDownLatchEntry&gt; future = subscribe();</span><br><span class="line">    <span class="keyword">try</span> {</span><br><span class="line">        commandExecutor.syncSubscriptionInterrupted(future);</span><br><span class="line"></span><br><span class="line">        <span class="comment">// 如果计数器大于0，就等待计数器为0的消息，循环判断直到计数器到0</span></span><br><span class="line">        <span class="keyword">while</span> (getCount() &gt; <span class="number">0</span>) {</span><br><span class="line">            <span class="comment">// waiting for open state</span></span><br><span class="line">            future.getNow().getLatch().await();</span><br><span class="line">        }</span><br><span class="line">    } <span class="keyword">finally</span> {</span><br><span class="line">        unsubscribe(future);</span><br><span class="line">    }</span><br><span class="line">}</span><br></pre></td></tr></tbody></table></figure>
+  </div>
+</article>
+
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E4%BF%A1%E5%8F%B7%E9%87%8F-Semaphore"><span class="toc-number">1.</span> <span class="toc-text">信号量 Semaphore</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E6%96%B0%E5%A2%9E%E5%87%AD%E8%AF%81"><span class="toc-number">1.1.</span> <span class="toc-text">新增凭证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%8E%B7%E5%8F%96%E5%87%AD%E8%AF%81"><span class="toc-number">1.2.</span> <span class="toc-text">获取凭证</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E9%87%8A%E6%94%BE%E5%87%AD%E8%AF%81"><span class="toc-number">1.3.</span> <span class="toc-text">释放凭证</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%97%AD%E9%94%81-CountDownLatch"><span class="toc-number">2.</span> <span class="toc-text">闭锁 CountDownLatch</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%BE%E7%BD%AE%E8%AE%A1%E6%95%B0%E5%99%A8%E5%80%BC"><span class="toc-number">2.1.</span> <span class="toc-text">设置计数器值</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%87%8F%E5%B0%91%E8%AE%A1%E6%95%B0%E5%99%A8%E5%80%BC"><span class="toc-number">2.2.</span> <span class="toc-text">减少计数器值</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%AD%89%E5%BE%85%E8%AE%A1%E6%95%B0%E5%99%A8%E5%80%BC%E8%BE%BE%E5%88%B00"><span class="toc-number">2.3.</span> <span class="toc-text">等待计数器值达到0</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2021/12/16/redission-05/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2021/12/16/redission-05/&text=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2021/12/16/redission-05/&is_video=false&description=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【Redission源码】信号量&amp;闭锁源码解析&body=Check out this article: https://haifuns.com/2021/12/16/redission-05/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2021/12/16/redission-05/&title=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2021/12/16/redission-05/&name=【Redission源码】信号量&amp;闭锁源码解析&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2021/12/16/redission-05/&t=【Redission源码】信号量&amp;闭锁源码解析"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+</body>
+</html>
