@@ -19,7 +19,7 @@ jobs:
 
       - name: Mark github workspace as safe
         run: |
-          git config --global --add safe.directory ${{ secrets.SAFE_DIRECTORY }}
+          git config --global --add safe.directory /github/workspace
           
       - uses: actions/checkout@v2
       - name: Checkout submodules
