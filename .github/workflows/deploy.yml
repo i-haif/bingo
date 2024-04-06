@@ -16,16 +16,11 @@ jobs:
         uses: actions/setup-node@v2
         with:
           node-version: ${{ matrix.node-version }}
-
-      - name: Mark github workspace as safe
-        run: |
-          git config --global --add safe.directory /github/workspace
           
-      - uses: actions/checkout@v2
-      - name: Checkout submodules
-        uses: srt32/git-actions@v0.0.3
+      - name: Checkout repository and submodules
+        uses: actions/checkout@v2
         with:
-          args: git submodule update --init --recursive
+          submodules: recursive
 
       - name: Run Export
         run: |
