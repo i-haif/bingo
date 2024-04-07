@@ -14,7 +14,7 @@
 <meta property="og:description" content="使用消息队列有什么优点？ 解耦，减少系统间关联性。 异步，将消息写入消息队列，非必要的业务逻辑以异步的方式运行，加快响应速度。 削峰，并发量大的时候，请求压力可能加到到数据库，造成数据库连接异常。  使用消息队列有什么缺点？ 系统可用性降低，引入新系统，当其不可用时可能导致整个业务流程故障。 系统复杂性增加:要多考虑很多方面的问题，比如一致性问题、如何保证消息不被重复消费，如何保证消息可靠传输等。">
 <meta property="og:locale" content="zh_CN">
 <meta property="article:published_time" content="2020-06-14T04:00:00.000Z">
-<meta property="article:modified_time" content="2024-04-07T03:59:59.790Z">
+<meta property="article:modified_time" content="2024-04-07T05:22:30.434Z">
 <meta property="article:author" content="haifun">
 <meta property="article:tag" content="RabbitMQ">
 <meta name="twitter:card" content="summary">
@@ -318,6 +318,12 @@
 </article>
 
 
+    <div class="blog-post-comments">
+        <div id="utterances_thread">
+            <noscript>加载评论需要在浏览器启用 JavaScript 脚本支持。</noscript>
+        </div>
+    </div>
+
 
         
           <div id="footer-post-container">
@@ -477,6 +483,26 @@
 <!-- Disqus Comments -->
 
 <!-- utterances Comments -->
+
+    <script type="text/javascript">
+      var utterances_repo = 'haifuns/haifuns.github.io';
+      var utterances_issue_term = 'pathname';
+      var utterances_label = 'Comment';
+      var utterances_theme = 'github-light';
+
+      (function(){
+          var script = document.createElement('script');
+
+          script.src = 'https://utteranc.es/client.js';
+          script.setAttribute('repo', utterances_repo);
+          script.setAttribute('issue-term', 'pathname');
+          script.setAttribute('label', utterances_label);
+          script.setAttribute('theme', utterances_theme);
+          script.setAttribute('crossorigin', 'anonymous');
+          script.async = true;
+          (document.getElementById('utterances_thread')).appendChild(script);
+      }());
+  </script>
 
 </body>
 </html>
