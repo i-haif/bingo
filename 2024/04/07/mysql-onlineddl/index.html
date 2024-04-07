@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="改表是否会锁表，取决于使用的改表方案，不同的改表方案通常会有不同的锁表时长。下面将分别介绍 MySQL 原生 Online-DDL 以及开源第三方工具 gh-ost 两种改表方案。 Online-DDLOnline-DDL算法：  COPY，mysql5.6前 INPLACE，mysql5.6 INSTANT，mysql8.0  在执行 DDL 操作时，不管何种算法，都会经历准备（prepare）">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【MySQL】改表是否会锁表？">
+<meta property="og:url" content="https://haifuns.com/2024/04/07/mysql-onlineddl/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="改表是否会锁表，取决于使用的改表方案，不同的改表方案通常会有不同的锁表时长。下面将分别介绍 MySQL 原生 Online-DDL 以及开源第三方工具 gh-ost 两种改表方案。 Online-DDLOnline-DDL算法：  COPY，mysql5.6前 INPLACE，mysql5.6 INSTANT，mysql8.0  在执行 DDL 操作时，不管何种算法，都会经历准备（prepare）">
+<meta property="og:locale" content="zh_CN">
+<meta property="article:published_time" content="2024-04-07T10:10:00.000Z">
+<meta property="article:modified_time" content="2024-04-07T10:14:06.661Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="MySQL">
+<meta name="twitter:card" content="summary">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【MySQL】改表是否会锁表？</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2023/09/11/olap-doris/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2024/04/07/mysql-onlineddl/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&text=【MySQL】改表是否会锁表？"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&is_video=false&description=【MySQL】改表是否会锁表？"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【MySQL】改表是否会锁表？&body=Check out this article: https://haifuns.com/2024/04/07/mysql-onlineddl/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&name=【MySQL】改表是否会锁表？&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2024/04/07/mysql-onlineddl/&t=【MySQL】改表是否会锁表？"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Online-DDL"><span class="toc-number">1.</span> <span class="toc-text">Online-DDL</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#COPY"><span class="toc-number">1.1.</span> <span class="toc-text">COPY</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#INPLACE"><span class="toc-number">1.2.</span> <span class="toc-text">INPLACE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#INSTANT"><span class="toc-number">1.3.</span> <span class="toc-text">INSTANT</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#gh-ost"><span class="toc-number">2.</span> <span class="toc-text">gh-ost</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#gh-ost-%E6%94%B9%E8%A1%A8%E5%8E%9F%E7%90%86"><span class="toc-number">2.1.</span> <span class="toc-text">gh-ost 改表原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#gh-ost-%E6%94%B9%E8%A1%A8%E8%80%97%E6%97%B6"><span class="toc-number">2.2.</span> <span class="toc-text">gh-ost 改表耗时</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">3.</span> <span class="toc-text">最佳实践</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【MySQL】改表是否会锁表？
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2024-04-07T10:10:00.000Z" class="dt-published" itemprop="datePublished">2024-04-07</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/%E6%95%B0%E6%8D%AE%E5%BA%93/">数据库</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/MySQL/" rel="tag">MySQL</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>改表是否会锁表，取决于使用的改表方案，不同的改表方案通常会有不同的锁表时长。下面将分别介绍 MySQL 原生 Online-DDL 以及开源第三方工具 gh-ost 两种改表方案。</p>
+<h1 id="Online-DDL"><a href="#Online-DDL" class="headerlink" title="Online-DDL"></a>Online-DDL</h1><p>Online-DDL算法：</p>
+<ul>
+<li>COPY，mysql5.6前</li>
+<li>INPLACE，mysql5.6</li>
+<li>INSTANT，mysql8.0</li>
+</ul>
+<p>在执行 DDL 操作时，不管何种算法，都会经历准备（prepare）、执行（DDL）、提交（commit）三个阶段。不同之处是在三个阶段中分别作了不同的处理。</p>
+<h2 id="COPY"><a href="#COPY" class="headerlink" title="COPY"></a>COPY</h2><ol>
+<li>准备阶段：<ol>
+<li>对表加元数据共享锁，读取 .frm 元数据；（此时 DDL 不能并行，DML 可以并行）</li>
+<li>共享锁升级为排他锁；（此时 DDL、DML 都不能并行）</li>
+<li>在 server 层通过 create like 语句，创建临时表，engine 层也生成对应 .ibd、.frm 文件；（8.0 之后没有 .frm 文件）</li>
+</ol>
+</li>
+<li>执行阶段：<ol>
+<li>修改临时表元数据；（加列）</li>
+<li>拷贝原表数据到临时表；（最耗时，按行 copy）</li>
+<li>删除原表及文件；</li>
+<li>重命名临时表及文件；</li>
+</ol>
+</li>
+<li>提交阶段：<ol>
+<li>提交事务，释放锁；</li>
+</ol>
+</li>
+</ol>
+<p>COPY算法整个流程期间都持有锁，既不能写入数据也不能查询数据，容易造成数据库堵塞，因此并不实用。</p>
+<h2 id="INPLACE"><a href="#INPLACE" class="headerlink" title="INPLACE"></a>INPLACE</h2><ol>
+<li>准备阶段：<ol>
+<li>对表加元数据共享锁，并升级为排他锁；（此时 DML 不能并行）</li>
+<li>判断是否使用 inplace 算法，判断语句是 rebuild table 还是 no-rebuild，rebuild 在原表所在的路径下创建 .frm 和 .ibd 临时中转文件；（在 engine 层克隆，而不是像 copy 那样，在 server 层创建（create like））</li>
+<li>申请 row log 空间，用于存放 DDL 执行阶段产生的 DML 操作；（no-rebuild不需要）</li>
+</ol>
+</li>
+<li>执行阶段：<ol>
+<li>释放排他锁，保留元数据共享锁；（此时 DML 可以并行）</li>
+<li>扫描原表主键以及二级索引的所有数据页，生成 B+ 树，存储到临时文件中；（在引擎层扫描，最耗时）</li>
+<li>将所有对原表的 DML 操作记录在日志文件 row log 中并回放；</li>
+</ol>
+</li>
+<li>提交阶段：<ol>
+<li>升级元数据共享锁，产生排他锁锁表；（此时 DML 不能并行）</li>
+<li>重做 row log 中的内容；（no-rebuild 不需要）</li>
+<li>重命名原表文件，将临时文件改名为原表文件名，删除原表文件；</li>
+<li>提交事务，变更完成；</li>
+</ol>
+</li>
+</ol>
+<p>INPLACE 算法无需拷贝全表数据到新表，但还是需要 IN-PLACE 方式（原地，无需生成新的临时表）重建整表。这种情况下，在 DDL 的初始准备和最后结束两个阶段时需要加排他 DML锁（metadata lock，元数据锁），除外，DDL 期间不会阻塞 DML。</p>
+<p>虽然准备、提交两个阶段都无法进行 CRUD，但实际上，整个 DDL 过程执行阶段时间占比最长，对于业务层来说，绝大部分时间可以保证正常访问。</p>
+<h2 id="INSTANT"><a href="#INSTANT" class="headerlink" title="INSTANT"></a>INSTANT</h2><p>只需修改数据字典中的元数据，无需拷贝数据也无需重建整表，同样，也无需加排他 DML 锁，原表数据也不受影响。整个 DDL 过程几乎是瞬间完成的，也不会阻塞 DML。</p>
+<p>这个新特性是8.0.12引入的（腾讯DBA团队贡献），目前只支持添加列等少量操作。</p>
+<h1 id="gh-ost"><a href="#gh-ost" class="headerlink" title="gh-ost"></a>gh-ost</h1><p>gh-ost 是 GitHub 开源的一款 MySQL 在线 DDL 改表工具。它的主要优点包括：</p>
+<ol>
+<li>不阻塞：在改表过程中，对原表的读写操作不会被阻塞。</li>
+<li>减少主从延迟：通过在从库上执行改表操作，可以减少主从复制的延迟。</li>
+<li>可控的副本流量：可以控制改表过程中的副本流量，避免对数据库服务器造成过大压力。</li>
+<li>支持暂停和恢复：在改表过程中，可以随时暂停和恢复改表操作。</li>
+<li>安全：在改表过程中，如果出现问题，可以立即切换回原表，不会丢失数据。</li>
+<li>可观察性：提供了丰富的监控和日志，可以实时查看改表的进度和状态。</li>
+<li>灵活性：支持各种复杂的改表操作，包括添加/删除/修改列、添加/删除索引等。</li>
+<li>测试模式：可以在不实际执行改表操作的情况下，验证改表的过程和结果。</li>
+</ol>
+<h2 id="gh-ost-改表原理"><a href="#gh-ost-改表原理" class="headerlink" title="gh-ost 改表原理"></a>gh-ost 改表原理</h2><p>gh-ost 工具基于中间表增量迁移数据 + rename 表替换完成改表动作。通过创建一个与原表结构相同的_ghost_表，然后将原表的数据逐行复制到_ghost_表中，同时捕获并复制原表上的数据变更。当数据复制完成后，将_ghost_表重命名为原表，完成改表操作。</p>
+<p>其中耗时主要发生在数据迁移阶段，该阶段不锁表，rename 表替换阶段会有短暂锁表，但通常为秒级。</p>
+<h2 id="gh-ost-改表耗时"><a href="#gh-ost-改表耗时" class="headerlink" title="gh-ost 改表耗时"></a>gh-ost 改表耗时</h2><p>改表操作是动态执行的，耗时与集群负载/主从延迟/业务写入量/网络等多种外部因素息息相关，目前没有精确的改表速度评估方式。经验评估方式有2种：</p>
+<ol>
+<li>根据表数据行数预估：1w行/s；</li>
+<li>根据表空间大小预估：1G/5min；</li>
+</ol>
+<p>（仅供参考，实际执行速度可能会偏差较大。建议预留充足时间，避免影响业务进度。）</p>
+<h1 id="最佳实践"><a href="#最佳实践" class="headerlink" title="最佳实践"></a>最佳实践</h1><blockquote>
+<p>通常情况下，我们期望 RDS 改表锁表时间为秒级，同时通过避开高峰期执行，从而减少对业务产生的影响。</p>
+</blockquote>
+<p>改表方案选择：</p>
+<ol>
+<li>有主键/唯一键 &amp;&amp; 没有外键：使用 gh-ost 进行改表，改表结束阶段会出现短暂锁表；</li>
+<li>没有主键/唯一键 &amp;&amp; 行数 &lt; 10w &amp;&amp; 表大小 &lt; 100M：直接使用MySQL原生的改表方案，改表期间会出现间歇性锁表；</li>
+</ol>
+<h1 id="参考资料"><a href="#参考资料" class="headerlink" title="参考资料"></a>参考资料</h1><ul>
+<li><a target="_blank" rel="noopener" href="https://blog.csdn.net/weixin_45238761/article/details/125343029">MySQL Online DDL详解</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/doc/refman/8.0/en/innodb-online-ddl-operations.html">MySQL官方文档 innodb-online-ddl</a></li>
+<li><a target="_blank" rel="noopener" href="https://dev.mysql.com/blog-archive/mysql-8-0-innodb-now-supports-instant-add-column/">MySQL8.0 腾讯游戏 DBA 团队贡献秒级加列功能，官方blog</a></li>
+<li><a target="_blank" rel="noopener" href="https://github.com/github/gh-ost">github/gh-ost</a></li>
+</ul>
+
+  </div>
+</article>
+
+
+    <div class="blog-post-comments">
+        <div id="utterances_thread">
+            <noscript>加载评论需要在浏览器启用 JavaScript 脚本支持。</noscript>
+        </div>
+    </div>
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#Online-DDL"><span class="toc-number">1.</span> <span class="toc-text">Online-DDL</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#COPY"><span class="toc-number">1.1.</span> <span class="toc-text">COPY</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#INPLACE"><span class="toc-number">1.2.</span> <span class="toc-text">INPLACE</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#INSTANT"><span class="toc-number">1.3.</span> <span class="toc-text">INSTANT</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#gh-ost"><span class="toc-number">2.</span> <span class="toc-text">gh-ost</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#gh-ost-%E6%94%B9%E8%A1%A8%E5%8E%9F%E7%90%86"><span class="toc-number">2.1.</span> <span class="toc-text">gh-ost 改表原理</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#gh-ost-%E6%94%B9%E8%A1%A8%E8%80%97%E6%97%B6"><span class="toc-number">2.2.</span> <span class="toc-text">gh-ost 改表耗时</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">3.</span> <span class="toc-text">最佳实践</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%8F%82%E8%80%83%E8%B5%84%E6%96%99"><span class="toc-number">4.</span> <span class="toc-text">参考资料</span></a></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2024/04/07/mysql-onlineddl/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&text=【MySQL】改表是否会锁表？"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&is_video=false&description=【MySQL】改表是否会锁表？"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【MySQL】改表是否会锁表？&body=Check out this article: https://haifuns.com/2024/04/07/mysql-onlineddl/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&title=【MySQL】改表是否会锁表？"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2024/04/07/mysql-onlineddl/&name=【MySQL】改表是否会锁表？&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2024/04/07/mysql-onlineddl/&t=【MySQL】改表是否会锁表？"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2024
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+    <script type="text/javascript">
+      var utterances_repo = 'haifuns/haifuns.github.io';
+      var utterances_issue_term = 'pathname';
+      var utterances_label = 'Comment';
+      var utterances_theme = 'github-light';
+
+      (function(){
+          var script = document.createElement('script');
+
+          script.src = 'https://utteranc.es/client.js';
+          script.setAttribute('repo', utterances_repo);
+          script.setAttribute('issue-term', 'pathname');
+          script.setAttribute('label', utterances_label);
+          script.setAttribute('theme', utterances_theme);
+          script.setAttribute('crossorigin', 'anonymous');
+          script.async = true;
+          (document.getElementById('utterances_thread')).appendChild(script);
+      }());
+  </script>
+
+</body>
+</html>
