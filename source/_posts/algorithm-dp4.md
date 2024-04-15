@@ -211,7 +211,7 @@ public static int dp(int[] arr, int aim) {
 		for (int rest = 0; rest <= aim; rest++) {
 			dp[index][rest] = dp[index + 1][rest];
 			if (rest - arr[index] >= 0) {
- 				// 画出二维表观察，优化遍历枚举，当前位置遍历枚举 = 左边位置 + 下边位置
+                // 画出二维表观察，优化遍历枚举，当前位置遍历枚举 = 左边位置 + 下边位置
 				dp[index][rest] += dp[index][rest - arr[index]];
 			}
 		}
@@ -228,7 +228,7 @@ public static int dp(int[] arr, int aim) {
 例如：arr = {1,2,1,1,2,1,2}，aim = 4
 1+1+1+1、1+1+2、2+2，返回 3。
 
-## 暴力低估
+## 暴力递归
 
 ```java
 public static class Info {
@@ -274,7 +274,7 @@ public static int process(int[] coins, int[] zhangs, int index, int rest) {
 		return rest == 0 ? 1 : 0;
 	}
 	int ways = 0;
-	for (int zhang = 0; zhang * coins[index] <= rest && zhang <= zhangs[index]; zhang++) { // 限制张数+余额，可以使用多少张
+	for (int zhang = 0; zhang * coins[index] <= rest && zhang <= zhangs[index]; zhang++) {     // 限制张数+余额，可以使用多少张
 		ways += process(coins, zhangs, index + 1, rest - (zhang * coins[index]));
 	}
 	return ways;
