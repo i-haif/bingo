@@ -67,48 +67,47 @@ public static int process1(int cur, int rest, int aim, int N) {
 
 ```java
 // 实现方式1优化，利用缓存优化暴力递归
-    public static int ways2(int N, int start, int aim, int K) {
-        if (N < 2 || start < 1 || start > N || aim < 1 || aim > N || K < 1) {
-            return -1;
-        }
-
-        // dp就是缓存表，大小 N+1 * K+1
-        int[][] dp = new int[N + 1][K + 1];
-        for (int i = 0; i <= N; i++) {
-            for (int j = 0; j <= K; j++) {
-                dp[i][j] = -1; // 初始化值为-1
-            }
-        }
-
-        // dp[cur][rest] == -1 -> process2(cur, rest)之前没算过！
-        // dp[cur][rest] != -1 -> process2(cur, rest)之前算过！返回值，dp[cur][rest]
-
-        return process2(start, K, aim, N, dp);
+public static int ways2(int N, int start, int aim, int K) {
+    if (N < 2 || start < 1 || start > N || aim < 1 || aim > N || K < 1) {
+        return -1;
     }
 
-    // 当前位置cur范围： 1 ~ N
-    // 剩余步数rest范围：0 ~ K
-    public static int process2(int cur, int rest, int aim, int N, int[][] dp) {
-        if (dp[cur][rest] != -1) {
-            return dp[cur][rest]; // 之前算过返回缓存值
+    // dp就是缓存表，大小 N+1 * K+1
+    int[][] dp = new int[N + 1][K + 1];
+    for (int i = 0; i <= N; i++) {
+        for (int j = 0; j <= K; j++) {
+            dp[i][j] = -1; // 初始化值为-1
         }
-
-        // 之前没算过
-        int ans = 0;
-        if (rest == 0) { // 没有剩余步数
-            ans = cur == aim ? 1 : 0; // 当前位置是不是目标位置
-        } else if (cur == 1) { // 走到左边界
-            ans = process2(2, rest - 1, aim, N, dp); // 往右走，步数-1
-        } else if (cur == N) { // 走到右边界
-            ans = process2(N - 1, rest - 1, aim, N, dp); // 往左走，步数-1
-        } else {
-            // 可以往左右也可以往右走，方案求和，步数-1
-            ans = process2(cur - 1, rest - 1, aim, N, dp) + process2(cur + 1, rest - 1, aim, N, dp);
-        }
-        dp[cur][rest] = ans; // 记录缓存
-        return ans;
-
     }
+
+    // dp[cur][rest] == -1 -> process2(cur, rest)之前没算过！
+    // dp[cur][rest] != -1 -> process2(cur, rest)之前算过！返回值，dp[cur][rest]
+
+    return process2(start, K, aim, N, dp);
+}
+
+// 当前位置cur范围： 1 ~ N
+// 剩余步数rest范围：0 ~ K
+public static int process2(int cur, int rest, int aim, int N, int[][] dp) {
+    if (dp[cur][rest] != -1) {
+        return dp[cur][rest]; // 之前算过返回缓存值
+    }
+    
+    // 之前没算过
+    int ans = 0;
+    if (rest == 0) { // 没有剩余步数
+        ans = cur == aim ? 1 : 0; // 当前位置是不是目标位置
+    } else if (cur == 1) { // 走到左边界
+        ans = process2(2, rest - 1, aim, N, dp); // 往右走，步数-1
+    } else if (cur == N) { // 走到右边界
+        ans = process2(N - 1, rest - 1, aim, N, dp); // 往左走，步数-1
+    } else {
+        // 可以往左右也可以往右走，方案求和，步数-1
+        ans = process2(cur - 1, rest - 1, aim, N, dp) + process2(cur + 1, rest - 1, aim, N, dp);
+    }
+    dp[cur][rest] = ans; // 记录缓存
+    return ans;
+}
 ```
 
 ## 动态规划实现
