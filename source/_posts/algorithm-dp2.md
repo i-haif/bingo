@@ -206,7 +206,7 @@ public static String minus(String s1, String s2) {
 }
 ```
 
-## 暴力低估词频和剪枝优化
+## 暴力递归词频和剪枝优化
 
 ```java
 // 暴力递归词频和剪枝优化
