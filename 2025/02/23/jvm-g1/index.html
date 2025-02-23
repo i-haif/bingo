@@ -1,0 +1,598 @@
+<!DOCTYPE html>
+<html lang=zh>
+<head>
+    <!-- so meta -->
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="HandheldFriendly" content="True">
+    <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+    <meta name="description" content="G1垃圾回收器（垃圾优先回收器）：  垃圾回收优先，优先回收垃圾，不会等到空间全部占满然后进行回收 停顿预测模型，预测一次回收可以回收的分区数量，以满足对停顿时间的要求 化整为零的分区机制，内存分为n个大小相同的分区（Region），这种灵活可变的Region机制是G1控制停顿时间的核心设计  G1内存模型：HeapRegion是G1垃圾回收器内存管理的基本单位，也是最小单位。 分区类型：  新生">
+<meta property="og:type" content="article">
+<meta property="og:title" content="【JVM】G1垃圾回收器">
+<meta property="og:url" content="https://haifuns.com/2025/02/23/jvm-g1/index.html">
+<meta property="og:site_name" content="haifun&#39;s blog">
+<meta property="og:description" content="G1垃圾回收器（垃圾优先回收器）：  垃圾回收优先，优先回收垃圾，不会等到空间全部占满然后进行回收 停顿预测模型，预测一次回收可以回收的分区数量，以满足对停顿时间的要求 化整为零的分区机制，内存分为n个大小相同的分区（Region），这种灵活可变的Region机制是G1控制停顿时间的核心设计  G1内存模型：HeapRegion是G1垃圾回收器内存管理的基本单位，也是最小单位。 分区类型：  新生">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://img.haifuns.com/jvm/g1-ygc.png">
+<meta property="article:published_time" content="2025-02-23T13:40:00.000Z">
+<meta property="article:modified_time" content="2025-02-23T13:53:31.045Z">
+<meta property="article:author" content="haifun">
+<meta property="article:tag" content="JVM">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://img.haifuns.com/jvm/g1-ygc.png">
+    
+    
+      
+        
+          <link rel="shortcut icon" href="/images/favicon.ico">
+        
+      
+      
+        
+          <link rel="icon" type="image/png" href="/images/favicon-192x192.png" sizes="192x192">
+        
+      
+      
+        
+          <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png">
+        
+      
+    
+    <!-- title -->
+    <title>【JVM】G1垃圾回收器</title>
+    <!-- async scripts -->
+    <!-- Google Analytics -->
+
+
+    <!-- Umami Analytics -->
+
+
+    <!-- styles -->
+    
+<link rel="stylesheet" href="/css/style.css">
+
+    <!-- persian styles -->
+    
+    <!-- rss -->
+    
+    
+      <link rel="alternate" href="/true" title="haifun&#39;s blog" type="application/atom+xml" />
+    
+	<!-- mathjax -->
+	
+		<script type="text/x-mathjax-config">
+		  MathJax.Hub.Config({
+			tex2jax: {
+			  skipTags: ['script', 'noscript', 'style', 'textarea', 'pre'],
+			  inlineMath: [['$','$']]
+			}
+		  });
+		</script>
+		<script src='https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.5/latest.js?config=TeX-MML-AM_CHTML' async></script>
+	
+<meta name="generator" content="Hexo 5.4.2">
+<style>.github-emoji { position: relative; display: inline-block; width: 1.2em; min-height: 1.2em; overflow: hidden; vertical-align: top; color: transparent; }  .github-emoji > span { position: relative; z-index: 10; }  .github-emoji img, .github-emoji .fancybox { margin: 0 !important; padding: 0 !important; border: none !important; outline: none !important; text-decoration: none !important; user-select: none !important; cursor: auto !important; }  .github-emoji img { height: 1.2em !important; width: 1.2em !important; position: absolute !important; left: 50% !important; top: 50% !important; transform: translate(-50%, -50%) !important; user-select: none !important; cursor: auto !important; } .github-emoji-fallback { color: inherit; } .github-emoji-fallback img { opacity: 0 !important; }</style>
+</head>
+
+<body class="max-width mx-auto px3 ltr">
+    
+      <div id="header-post">
+  <a id="menu-icon" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="menu-icon-tablet" href="#" aria-label="目录"><i class="fa-solid fa-bars fa-lg"></i></a>
+  <a id="top-icon-tablet" href="#" aria-label="顶部" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');" style="display:none;"><i class="fa-solid fa-chevron-up fa-lg"></i></a>
+  <span id="menu">
+    <span id="nav">
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </span>
+    <br/>
+    <span id="actions">
+      <ul>
+        
+        
+        <li><a class="icon" aria-label="下一篇" href="/2024/04/07/mysql-onlineddl/"><i class="fa-solid fa-chevron-right" aria-hidden="true" onmouseover="$('#i-next').toggle();" onmouseout="$('#i-next').toggle();"></i></a></li>
+        
+        <li><a class="icon" aria-label="返回顶部" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up" aria-hidden="true" onmouseover="$('#i-top').toggle();" onmouseout="$('#i-top').toggle();"></i></a></li>
+        <li><a class="icon" aria-label="分享文章" href="#"><i class="fa-solid fa-share-alt" aria-hidden="true" onmouseover="$('#i-share').toggle();" onmouseout="$('#i-share').toggle();" onclick="$('#share').toggle();return false;"></i></a></li>
+      </ul>
+      <span id="i-prev" class="info" style="display:none;">上一篇</span>
+      <span id="i-next" class="info" style="display:none;">下一篇</span>
+      <span id="i-top" class="info" style="display:none;">返回顶部</span>
+      <span id="i-share" class="info" style="display:none;">分享文章</span>
+    </span>
+    <br/>
+    <div id="share" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2025/02/23/jvm-g1/"><i class="fab fa-facebook " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2025/02/23/jvm-g1/&text=【JVM】G1垃圾回收器"><i class="fab fa-twitter " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-linkedin " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2025/02/23/jvm-g1/&is_video=false&description=【JVM】G1垃圾回收器"><i class="fab fa-pinterest " aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【JVM】G1垃圾回收器&body=Check out this article: https://haifuns.com/2025/02/23/jvm-g1/"><i class="fa-solid fa-envelope " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-get-pocket " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-reddit " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-stumbleupon " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-digg " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2025/02/23/jvm-g1/&name=【JVM】G1垃圾回收器&description="><i class="fab fa-tumblr " aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2025/02/23/jvm-g1/&t=【JVM】G1垃圾回收器"><i class="fab fa-hacker-news " aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+    
+    
+      <div id="toc">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#HeapRegion"><span class="toc-number">1.</span> <span class="toc-text">HeapRegion</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%89%A9%E5%B1%95%E6%9C%BA%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">内存扩展机制</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%81%9C%E9%A1%BF%E9%A2%84%E6%B5%8B%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.</span> <span class="toc-text">停顿预测模型</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%88%86%E9%85%8D"><span class="toc-number">4.</span> <span class="toc-text">对象分配</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#TLAB%E5%8E%9F%E7%90%86"><span class="toc-number">4.1.</span> <span class="toc-text">TLAB原理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6"><span class="toc-number">5.</span> <span class="toc-text">核心机制</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%B0%E5%BF%86%E9%9B%86RememberSet"><span class="toc-number">5.1.</span> <span class="toc-text">记忆集RememberSet</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%8D%E5%9B%BEBitMap"><span class="toc-number">5.2.</span> <span class="toc-text">位图BitMap</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%A1%E8%A1%A8CardTable"><span class="toc-number">5.3.</span> <span class="toc-text">卡表CardTable</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DCQ%E6%9C%BA%E5%88%B6"><span class="toc-number">5.4.</span> <span class="toc-text">DCQ机制</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6"><span class="toc-number">6.</span> <span class="toc-text">垃圾回收</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#YoungGC"><span class="toc-number">6.1.</span> <span class="toc-text">YoungGC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MixedGC"><span class="toc-number">6.2.</span> <span class="toc-text">MixedGC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#FullGC"><span class="toc-number">6.3.</span> <span class="toc-text">FullGC</span></a></li></ol></li></ol>
+      </div>
+    
+  </span>
+</div>
+
+    
+    <div class="content index py4 ">
+        
+        <article class="post h-entry" itemscope itemtype="http://schema.org/BlogPosting">
+  <header>
+    
+    <h1 class="posttitle p-name" itemprop="name headline">
+        【JVM】G1垃圾回收器
+    </h1>
+
+
+
+    <div class="meta">
+      <span class="author p-author h-card" itemprop="author" itemscope itemtype="http://schema.org/Person">
+        <span class="p-name" itemprop="name">haifun</span>
+      </span>
+      
+    <div class="postdate">
+      
+        <time datetime="2025-02-23T13:40:00.000Z" class="dt-published" itemprop="datePublished">2025-02-23</time>
+        
+      
+    </div>
+
+
+      
+    <div class="article-category">
+        <i class="fa-solid fa-archive"></i>
+        <a class="category-link" href="/categories/JVM/">JVM</a>
+    </div>
+
+
+      
+    <div class="article-tag">
+        <i class="fa-solid fa-tag"></i>
+        <a class="p-category" href="/tags/JVM/" rel="tag">JVM</a>
+    </div>
+
+
+    </div>
+  </header>
+  
+
+  <div class="content e-content" itemprop="articleBody">
+    <p>G1垃圾回收器（垃圾优先回收器）：</p>
+<ul>
+<li>垃圾回收优先，优先回收垃圾，不会等到空间全部占满然后进行回收</li>
+<li>停顿预测模型，预测一次回收可以回收的分区数量，以满足对停顿时间的要求</li>
+<li>化整为零的分区机制，内存分为n个大小相同的分区（Region），这种灵活可变的Region机制是G1控制停顿时间的核心设计</li>
+</ul>
+<p>G1内存模型：HeapRegion是G1垃圾回收器内存管理的基本单位，也是最小单位。</p>
+<p>分区类型：</p>
+<ul>
+<li>新生代分区：Young Heap Region YHR</li>
+<li>自由分区：Free Heap Region FHR</li>
+<li>老年代分区：Old Heap Region OHR</li>
+<li>大对象分区：Humongous Heap Region HHR</li>
+</ul>
+<p>ParNew+CMS与G1内存模型对比：</p>
+<ul>
+<li>ParNew+CMS，新生代（Eden、Survivor1、Survivor2）、老年代<ul>
+<li>优势：管理简单，小内存时垃圾回收不会造成很大的停顿</li>
+<li>劣势：大内存停顿时间长，例如分配64G给JVM，Eden区20-30G，回收一次Eden区可能需要2-3s</li>
+</ul>
+</li>
+</ul>
+<h1 id="HeapRegion"><a href="#HeapRegion" class="headerlink" title="HeapRegion"></a>HeapRegion</h1><p>G1如何设置HeapRegion大小：</p>
+<ol>
+<li>手动式，通过参数 G1HeapRegionSize 设置，默认为0，范围限制为1-32MB，需要是2的n次方</li>
+<li>启发式判断，G1根据内存（堆内存大小、分区数）自动计算</li>
+</ol>
+<p>HeapRegion大小对垃圾回收的影响：</p>
+<ol>
+<li>Region过小<ol>
+<li>找可以使用的Region难度增加</li>
+<li>跨区存储概率增加</li>
+</ol>
+</li>
+<li>Region过大<ol>
+<li>Region回收价值判断麻烦</li>
+<li>回收判定过程复杂，标记对象时对象多引用多、遇到跨代跨区存储还需要额外处理</li>
+</ol>
+</li>
+</ol>
+<p>Region大小计算：</p>
+<ol>
+<li>计算公式：<code>region_size = max((InitialHeapSize+MaxHeapSize)/2/2048,1MB)</code>，范围[1,32]MB<ol>
+<li>堆分区个数默认为2048，这个数字会根据具体内存大小自动计算，不能手动指定分区个数</li>
+<li>堆内存大小默认最大96MB（MaxHeapSize，+Xmx），最小0MB（InitialHeapSize，+Xms）</li>
+</ol>
+</li>
+<li>e.g.<ol>
+<li>只指定Region大小，设置Region大小为2MB，则G1总内存为2024*2MB=4GB，分区数2048</li>
+<li>指定堆内存且最大值等于最小值，设置堆内存Xms=Xmx=32GB，则RegionSize=max((32GB+32GB)/2/2048,1MB)=16MB</li>
+<li>指定堆内存且最大值不等于最小值，Xms=32GB，Xmx=128GB，则RegionSize=max((32GB+128GB)/2/2048,1MB)=32MB，G1会自动计算分区个数，分区范围在32GB/32MB=1024 ~ 128GB/32GB=4096之间</li>
+</ol>
+</li>
+<li>如果RegionSize不符合规则，G1会自动和2^n对齐，找数字里包含的最大的2的n次幂</li>
+</ol>
+<h1 id="内存扩展机制"><a href="#内存扩展机制" class="headerlink" title="内存扩展机制"></a>内存扩展机制</h1><p>新生代内存分配方式：</p>
+<ol>
+<li>参数指定方式<ol>
+<li>指定新生代大小，设置MaxNewSize、NewSize，设置Xmn相等于同时设置Xmn=MaxNewSize=NewSize</li>
+<li>指定新生代比例，NewRatio，只设置NewRatio时MaxNewSize=NewSize=heapSize/(NewRatio+1)，如果同时设置MaxNewSize、NewSize、NewRatio则NewRatio会被忽略</li>
+</ol>
+</li>
+<li>G1启发式推断<ol>
+<li>没有指定MaxNewSize、NewSize，或只设置其中一个，则G1会根据G1MaxNewSizePercent（默认60%）和G1NewSizePercent（默认5%）配置计算初始化和最大新生代大小</li>
+</ol>
+</li>
+</ol>
+<p>一般来说，在使用G1垃圾回收器时，不推荐自己指定新生代大小，而是让G1自动推断。除非是经过长时间观察找到了一个合理的<strong>新生代范围</strong>(MaxNewSize!=NewSize)。G1的新生代动态扩展可以帮助动态调整YGC所需时间。</p>
+<p>G1扩展新分区时机&amp;规则：</p>
+<ol>
+<li>参数GCTimeRatio设置GC与应用耗时时间比，默认值9，如果GC时间占比超过10%则需要进行动态扩展</li>
+<li>参数G1ExpandByPercentOfAvailable设置每次扩展从未使用内存中申请比例，默认值20，并且最小1MB，最大为已使用内存大小</li>
+</ol>
+<p>内存扩展流程：</p>
+<ol>
+<li>新生代不足 -&gt; 新生代扩展 -&gt; 找自由分区 -&gt; 自由分区不足 -&gt; 从堆内存申请新分区 -&gt; 加入新生代分区列表</li>
+<li>后台线程抽样 -&gt; GC时间占比超过10% -&gt; 自动扩展新生代分区 -&gt; 找自由分区 -&gt; 自由分区不足 -&gt; 从堆内存申请新分区 -&gt; 加入新生代分区列表</li>
+</ol>
+<h1 id="停顿预测模型"><a href="#停顿预测模型" class="headerlink" title="停顿预测模型"></a>停顿预测模型</h1><p>G1中的停顿预测模型为衰减标准差算法，公式如下:</p>
+<figure class="highlight plaintext"><table><tbody><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">davg(n) = Vn，n=1</span><br><span class="line">davg(n) = (1-α)*Vn + α*davg(n-1)，n&gt;1</span><br></pre></td></tr></tbody></table></figure>
+
+<p>α为衰减因子，是一个小于1的固定值，值越小，最新GC数据对结果影响越大。</p>
+<p>例如α=0.6，GC次数为3，第一次回收2GB用时200ms，第二次回收5GB用时300ms，第三次回收了3GB用时500ms，那么计算结果如下：</p>
+<p>davg(1)=2GB/200ms<br>davg(2)=(1-0.6)*5GB/300ms + 0.6*2GB/200ms<br>davg(3)=(1-0.6)*3GB/500ms + 0.6*((1-0.6)*5GB/300ms + 0.6*2GB/200ms)</p>
+<p>从davg(3)中可以看出，权重最大的就是最后一次GC。</p>
+<p>基于衰减算法模型的垃圾回收过程：</p>
+<ol>
+<li>获取历史GC数据</li>
+<li>使用衰减平均值算法模型计算衰减平均值，评估垃圾回收能力</li>
+<li>根据目标停顿时间和当前回收能力选择一定数量的Region</li>
+<li>执行垃圾回收</li>
+</ol>
+<h1 id="对象分配"><a href="#对象分配" class="headerlink" title="对象分配"></a>对象分配</h1><p>G1中使用TLAB（Thread Local Allocation Buffer）机制来进行对象分配，即每个线程都一个自己的本地分配缓冲区，专门用于对象的快速分配。</p>
+<p>使用TLAB机制只需要在线程创建时对堆内存加锁，减少了锁冲突导致的串行化执行问题，实现了对象分配时的无锁化。</p>
+<h2 id="TLAB原理"><a href="#TLAB原理" class="headerlink" title="TLAB原理"></a>TLAB原理</h2><p>TLAB过小，会导致TLAB被快速填满，从而导致对象不走TLAB分配，效率会变差。TLAB过大会造成内存碎片，拖慢回收效率。</p>
+<p>TLAB在初始化时大小通过公式计算：TLABSize = Eden * 2 * 1% / 线程数。</p>
+<p>G1中如果TLAB满了，有两种方式分配：</p>
+<ol>
+<li>重新申请一个TLAB给当前线程</li>
+<li>直接通过堆内存分配对象</li>
+</ol>
+<p>G1中存在一个refill_waste值，在JVM虚拟机内部维护，表示一个TLAB可以浪费的内存大小。也就是说，一个TLAB中最多可以剩余refill_waste空闲空间就可以认为TLAB满了。refill_waste可以通过TLABRefillWasteFraction调整，表示TLAB可以浪费的比例，默认值64，即可以浪费1/64。</p>
+<p>分配对象空间不足时处理流程：</p>
+<ol>
+<li>对象所需空间大于refill_waste，则直接在TLAB外分配（这个过程不同的GC算法有不同的规则），也就是在堆内存直接分配。</li>
+<li>对象所需空间小于refill_waste，则重新申请一个TLAB，用来存储新创建的对象，重新申请时会动态调整refill_waste和TLAB大小，以适应当前系统分配对象的情况。<ol>
+<li>如果申请TLAB失败，则进入堆加锁分配，失败则尝试扩展分区，申请Region失败则走垃圾回收（YoungGC，MixedGC），垃圾回收次数超过阈值则进行最终尝试，失败直接结束并OOM。</li>
+</ol>
+</li>
+</ol>
+<p>最终分配尝试流程：</p>
+<ol>
+<li>第一次FullGC，不回收软引用，完成后尝试分配对象，成功则结束，不成功进行第二次GC</li>
+<li>第二次FullGC，回收软引用，完成后尝试分配对象，成功则结束，不成功则OOM</li>
+</ol>
+<p>TLAB通过指针碰撞法来判断是否有可用的连续内存，top指针指向空闲内存开始位置，end指针指向整个TLAB结束位置，在分配对象时判断待分配对象空间和剩余空间大小（end - top）关系即可。</p>
+<p>TLAB长度固定，有可能会产生无法使用的内存空间，这些内存碎片由虚拟对象进行填充。</p>
+<p>TLABSize最大值为RegionSize/2，大对象&gt;TLABSize直接走慢速分配，到大对象分区分配。大对象在分配时，会判断是否启动垃圾回收和并发标记。</p>
+<h1 id="核心机制"><a href="#核心机制" class="headerlink" title="核心机制"></a>核心机制</h1><h2 id="记忆集RememberSet"><a href="#记忆集RememberSet" class="headerlink" title="记忆集RememberSet"></a>记忆集RememberSet</h2><p>记忆集是一组K-V结构，记录跨代引用关系，在GC时，可以借助记忆集和GCRoots快速解决同代引用及跨代引用的可达性分析问题，避免每次都将堆中所有对象都标记一遍。</p>
+<p>G1中的记忆集是以Region为最小内存管理维度，存储Region里所有对象被引用的引用关系，K为引用方对象所在Region地址，V为数组，存放引用方对象所在卡页在卡表中的下标。</p>
+<p>G1记忆集中记录的引用关系类型：</p>
+<ol>
+<li>老年代Region到新生代Region的引用关系，用来解决新生代回收时跨代引用</li>
+<li>老年代Region到老年代Region的引用关系，用来解决混合回收老年代选择部分Region回收时引用</li>
+</ol>
+<h2 id="位图BitMap"><a href="#位图BitMap" class="headerlink" title="位图BitMap"></a>位图BitMap</h2><p>G1中使用位图来描述内存使用状态，主要是在混合回收的并发标记阶段，用来提升内存是否使用的判定效率。</p>
+<h2 id="卡表CardTable"><a href="#卡表CardTable" class="headerlink" title="卡表CardTable"></a>卡表CardTable</h2><p>G1中使用全局卡表来描述整个堆的内存使用情况，本质上与位图类似，区别是描述内容比位图更多。卡表用一个字节来描述512字节的内存使用情况，以及垃圾回收过程中的状态信息。</p>
+<p>G1使用记忆集+卡表来解决分代模型中跨代引用关系判定和追踪问题。记忆集+卡表机制在时间和空间上做了平衡，在找老年代引用对象时，实际上就是遍历对应卡页的内存，按照对象长度的内存空间为步长遍历整体性能不会很差。</p>
+<h2 id="DCQ机制"><a href="#DCQ机制" class="headerlink" title="DCQ机制"></a>DCQ机制</h2><p>G1通过DCQ（Dirty Card Queue）脏数据队列来更新RSet，当引用关系发生变更时，发送变更消息到DCQ，Refine线程异步消费并更新RSet。</p>
+<p>Refine线程最大线程数为G1ConcRefinementThreads+1，每个线程都关联一个DCQ，每个DCQ长度为256，当DCQ写满就申请一个新的DCQ并把老的DCQ提交到DCQ Set里，即二级缓存DCQS。当DCQS不能存放更多的DCQ时，会由工作线程处理这个DCQ。</p>
+<p>G1给每个变更屏障操作前加了一个写屏障，用来增强操作，主要作用为：</p>
+<ol>
+<li>过滤掉不需要写的引用变更操作，比如新生代到新生代的引用、同一个Region的引用等</li>
+<li>把正常的变更数据写入一条到DCQ里</li>
+</ol>
+<p>G1给DCQS做了四个区域，由参数G1ConcRefinementGreenZone、G1ConcRefinementYellowZone、G1ConcRefinementRedZone划分，默认都是0，如果没有设置则由G1自动推断。四个区域如下：</p>
+<ol>
+<li>白区，[0,green)，不启动Refine线程处理DCQ</li>
+<li>绿区，[green,yellow)，根据DCQS元素个数来计算启动Refine线程个数</li>
+<li>黄区，[yellow,red)，所有Refine线程都参与到DCQ处理</li>
+<li>红区，[red,正无穷)，所有Refine线程以及系统工作线程都参与DCQ处理</li>
+</ol>
+<h1 id="垃圾回收"><a href="#垃圾回收" class="headerlink" title="垃圾回收"></a>垃圾回收</h1><p>G1回收器相关参数：</p>
+<ol>
+<li>-XX:+UseG1GC，使用G1垃圾回收器</li>
+<li>-XX:G1HeapRegionSize，Region分区大小，最小值1MB，最大值32MB，且只能是2的n次幂</li>
+<li>-Xms -Xmx，堆内存最大值最小值</li>
+<li>-XX:NewSize -XX:MaxNewSize，新生代最小值和最大值，这个最大值最小值在G1里一般不需要设置，G1会自动计算出来一个值，从5%的Region数量开始，最大为60%</li>
+<li>-XX:G1NewSizePercent -XX:G1MaxNewSizePercent，新生代region数量下限，默认5%-60%</li>
+<li>-XX:SurvivorRatio，新生代Eden和Survivor的比例，默认8，即eden:s1:s2=8:1:1</li>
+<li>-XX:MaxGCPauseMills，最大GC暂停时间。这是一个大概值，JVM会尽可能的满足此值</li>
+<li>-XX:NewRatio，new/old代的大小比例，默认2，只设置一个NewRatio和只设置一个Xmn相当</li>
+<li>-XX:ParallelGCThreads，参与回收的线程数量，默认和CPU核数相等</li>
+</ol>
+<h2 id="YoungGC"><a href="#YoungGC" class="headerlink" title="YoungGC"></a>YoungGC</h2><p>YoungGC流程：</p>
+<ol>
+<li>从GCRoot触发标记存活对象<ol>
+<li>暂停Refine线程，由GC线程消费DCQS并更新RSet，把RSet也作为GCRoot执行对象标记</li>
+<li>把GCRoot+RSet直接引用的对象所有field放到栈里，遍历栈，直到找到所有存活对象</li>
+</ol>
+</li>
+<li>复制存活对象到Survivor区</li>
+<li>回收垃圾对象<ol>
+<li>整理卡表</li>
+<li>重构RSet</li>
+<li>释放分区</li>
+<li>尝试回收大对象</li>
+</ol>
+</li>
+<li>动态调整新生代Region数量<ol>
+<li>GCTimeRatio+G1ExpandByPercentOfAvailable参数，GC时间占比超过10%就需要扩展新生代内存</li>
+<li>调整新生代分区数量和Refinement Zone阈值</li>
+</ol>
+</li>
+<li>判断是否需要开启并发标记<ol>
+<li>老年代内存使用率达到45%，在YGC结束后开启并发标记</li>
+</ol>
+</li>
+</ol>
+<p><img src="https://img.haifuns.com/jvm/g1-ygc.png" alt="YGC流程"></p>
+<h2 id="MixedGC"><a href="#MixedGC" class="headerlink" title="MixedGC"></a>MixedGC</h2><p>MixedGC流程：</p>
+<ol>
+<li>初始标记，Stop The World，伴随一次YGC，YGC结束时会判断是否需要开启并发标记</li>
+<li>并发标记<ol>
+<li>起始对象：Survivor区存活对象+GCRoots引用的老年代对象+RSet</li>
+<li>使用位图+三色标记法标记对象是否存活，黑色-存活，灰色-存活但子对象未遍历完全，白色-死亡</li>
+<li>SATB(Snapshot-At-The-Beginning)对象引用的快照状态，通过写屏蔽放入到SATB队列用来记录工作线程造成的引用变化</li>
+</ol>
+</li>
+<li>最终标记，STW，针对并发标记阶段由于系统运行造成的错标漏标情况进行修正，本质上是把SATB队列里的对象重新标记</li>
+<li>预回收阶段<ol>
+<li>根据RSet+BitMap完成存活对象的统计工作，按结果给Region排序</li>
+<li>更新prevBitMap位图，为下一次并发标记做准备（如果回收成功，则忽略）</li>
+<li>重置RSet，如果标记后分区没有对象被引用则删除旧的引用关系</li>
+<li>清理全部都是垃圾的分区</li>
+</ol>
+</li>
+<li>混合回收阶段<ol>
+<li>选择一些分区（Collect Set）进行回收，把分区内存活对象复制到空闲分区，清理原分区</li>
+<li>Collect Set算法依据回收性价比，单位时间内能回收的垃圾越多性价比越高，回收能力看对象转移效率，也就是存活对象越少性价比越高</li>
+<li>G1MixedGCLiveThresholdPercent，如果一个分区存活对象达到默认85%就不加入到CSet</li>
+<li>G1HeapWastePercent，如果选择的CSet可以回收的垃圾占总堆5%才会开始回收，否则不回收</li>
+<li>G1MixedGCCountTarget，最多分8次完成回收，每回收一次都再次判断G1HeapWastePercent</li>
+<li>G1OldCSetRegionThresholdPercent，每次回收掉的分区数不能超过整个堆分区数量的10%</li>
+</ol>
+</li>
+</ol>
+<h2 id="FullGC"><a href="#FullGC" class="headerlink" title="FullGC"></a>FullGC</h2><p>FullGC流程（STW）：<br>0. 前置处理，保存对象头、锁等信息</p>
+<ol>
+<li>标记存活对象，分区并行+任务窃取提高性能</li>
+<li>计算对象的新地址，单个线程处理的多个Region存活对象压缩到同一个Region</li>
+<li>更新引用对象的地址</li>
+<li>移动对象完成压缩（复制覆盖操作）</li>
+<li>复制后的处理<ol>
+<li>尝试调整整个堆分区的数量大小</li>
+<li>遍历整个堆，重构RSet</li>
+<li>清除dirty card队列，更新卡表，把所有分区设置为Old分区</li>
+<li>记录GC信息，更新新生代大小，选择一些分区作为新生代，重新构建Eden</li>
+</ol>
+</li>
+</ol>
+<p>补充：G1新特性，字符串去重优化，筛选条件：</p>
+<ol>
+<li>如果在YGC阶段<ol>
+<li>当字符串需要复制到S区，根据年龄判断达到阈值StringDeduplicationAgeThreshold则参与去重</li>
+<li>当字符串需要晋升到Old区，并且对象年龄小于阈值StringDeduplicationAgeThreshold则参与去重</li>
+</ol>
+</li>
+<li>如果在FullGC阶段，只需判断字符串对象是否年龄小于阈值，因为完成GC后所有分区都会被标记为Old分区</li>
+</ol>
+<p>找到所有需要去重的字符串后，会把这些字符串放到一个队列，开启一个后台线程利用HashTable结构完成去重操作。官方数据，经过去重操作能够节省约13%的内存，提升明显。</p>
+
+  </div>
+</article>
+
+
+    <div class="blog-post-comments">
+        <div id="utterances_thread">
+            <noscript>加载评论需要在浏览器启用 JavaScript 脚本支持。</noscript>
+        </div>
+    </div>
+
+
+        
+          <div id="footer-post-container">
+  <div id="footer-post">
+
+    <div id="nav-footer" style="display: none">
+      <ul>
+        
+          <li><a href="/">首页</a></li>
+        
+          <li><a href="/archives/">归档</a></li>
+        
+          <li><a href="/tags/">标签</a></li>
+        
+          <li><a href="/categories/">分类</a></li>
+        
+          <li><a href="/search/">搜索</a></li>
+        
+      </ul>
+    </div>
+
+    
+    
+      <div id="toc-footer" style="display: none">
+        <ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#HeapRegion"><span class="toc-number">1.</span> <span class="toc-text">HeapRegion</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%86%85%E5%AD%98%E6%89%A9%E5%B1%95%E6%9C%BA%E5%88%B6"><span class="toc-number">2.</span> <span class="toc-text">内存扩展机制</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%81%9C%E9%A1%BF%E9%A2%84%E6%B5%8B%E6%A8%A1%E5%9E%8B"><span class="toc-number">3.</span> <span class="toc-text">停顿预测模型</span></a></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%AF%B9%E8%B1%A1%E5%88%86%E9%85%8D"><span class="toc-number">4.</span> <span class="toc-text">对象分配</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#TLAB%E5%8E%9F%E7%90%86"><span class="toc-number">4.1.</span> <span class="toc-text">TLAB原理</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E6%A0%B8%E5%BF%83%E6%9C%BA%E5%88%B6"><span class="toc-number">5.</span> <span class="toc-text">核心机制</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E8%AE%B0%E5%BF%86%E9%9B%86RememberSet"><span class="toc-number">5.1.</span> <span class="toc-text">记忆集RememberSet</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BD%8D%E5%9B%BEBitMap"><span class="toc-number">5.2.</span> <span class="toc-text">位图BitMap</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%A1%E8%A1%A8CardTable"><span class="toc-number">5.3.</span> <span class="toc-text">卡表CardTable</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#DCQ%E6%9C%BA%E5%88%B6"><span class="toc-number">5.4.</span> <span class="toc-text">DCQ机制</span></a></li></ol></li><li class="toc-item toc-level-1"><a class="toc-link" href="#%E5%9E%83%E5%9C%BE%E5%9B%9E%E6%94%B6"><span class="toc-number">6.</span> <span class="toc-text">垃圾回收</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#YoungGC"><span class="toc-number">6.1.</span> <span class="toc-text">YoungGC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#MixedGC"><span class="toc-number">6.2.</span> <span class="toc-text">MixedGC</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#FullGC"><span class="toc-number">6.3.</span> <span class="toc-text">FullGC</span></a></li></ol></li></ol>
+      </div>
+    
+
+    <div id="share-footer" style="display: none">
+      <ul>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.facebook.com/sharer.php?u=https://haifuns.com/2025/02/23/jvm-g1/"><i class="fab fa-facebook fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://twitter.com/share?url=https://haifuns.com/2025/02/23/jvm-g1/&text=【JVM】G1垃圾回收器"><i class="fab fa-twitter fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.linkedin.com/shareArticle?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-linkedin fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://pinterest.com/pin/create/bookmarklet/?url=https://haifuns.com/2025/02/23/jvm-g1/&is_video=false&description=【JVM】G1垃圾回收器"><i class="fab fa-pinterest fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" href="mailto:?subject=【JVM】G1垃圾回收器&body=Check out this article: https://haifuns.com/2025/02/23/jvm-g1/"><i class="fa-solid fa-envelope fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://getpocket.com/save?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-get-pocket fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://reddit.com/submit?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-reddit fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.stumbleupon.com/submit?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-stumbleupon fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://digg.com/submit?url=https://haifuns.com/2025/02/23/jvm-g1/&title=【JVM】G1垃圾回收器"><i class="fab fa-digg fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="http://www.tumblr.com/share/link?url=https://haifuns.com/2025/02/23/jvm-g1/&name=【JVM】G1垃圾回收器&description="><i class="fab fa-tumblr fa-lg" aria-hidden="true"></i></a></li>
+  <li><a class="icon" target="_blank" rel="noopener" href="https://news.ycombinator.com/submitlink?u=https://haifuns.com/2025/02/23/jvm-g1/&t=【JVM】G1垃圾回收器"><i class="fab fa-hacker-news fa-lg" aria-hidden="true"></i></a></li>
+</ul>
+
+    </div>
+
+    <div id="actions-footer">
+        <a id="menu" class="icon" href="#" onclick="$('#nav-footer').toggle();return false;"><i class="fa-solid fa-bars fa-lg" aria-hidden="true"></i> 菜单</a>
+        
+          <a id="toc" class="icon" href="#" onclick="$('#toc-footer').toggle();return false;"><i class="fa-solid fa-list fa-lg" aria-hidden="true"></i> 目录</a>
+        
+        <a id="share" class="icon" href="#" onclick="$('#share-footer').toggle();return false;"><i class="fa-solid fa-share-alt fa-lg" aria-hidden="true"></i> 分享</a>
+        <a id="top" style="display:none" class="icon" href="#" onclick="$('html, body').animate({ scrollTop: 0 }, 'fast');"><i class="fa-solid fa-chevron-up fa-lg" aria-hidden="true"></i> 返回顶部</a>
+    </div>
+
+  </div>
+</div>
+
+        
+        <footer id="footer">
+  <div class="footer-left">
+    Copyright &copy;
+    
+    
+    2019-2025
+    haifun
+    <a target="_blank" rel="noopener" href="https://beian.miit.gov.cn/">
+      鲁ICP备19052103号
+    </a>
+  </div>
+  <div class="footer-right">
+    <nav>
+      <ul>
+        <!--
+       --><li><a href="/">首页</a></li><!--
+     --><!--
+       --><li><a href="/archives/">归档</a></li><!--
+     --><!--
+       --><li><a href="/tags/">标签</a></li><!--
+     --><!--
+       --><li><a href="/categories/">分类</a></li><!--
+     --><!--
+       --><li><a href="/search/">搜索</a></li><!--
+     -->
+      </ul>
+    </nav>
+  </div>
+</footer>
+
+    </div>
+    <!-- styles -->
+
+
+
+  <link rel="preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" crossorigin="anonymous" onload="this.onload=null;this.rel='stylesheet'"/>
+
+
+    <!-- jquery -->
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js" crossorigin="anonymous"></script>
+
+
+
+
+<!-- clipboard -->
+
+  
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/clipboard.js/2.0.7/clipboard.min.js" crossorigin="anonymous"></script>
+  
+  <script type="text/javascript">
+  $(function() {
+    // copy-btn HTML
+    var btn = "<span class=\"btn-copy tooltipped tooltipped-sw\" aria-label=\"复制到粘贴板！\">";
+    btn += '<i class="fa-regular fa-clone"></i>';
+    btn += '</span>';
+    // mount it!
+    $(".highlight table").before(btn);
+    var clip = new ClipboardJS('.btn-copy', {
+      text: function(trigger) {
+        return Array.from(trigger.nextElementSibling.querySelectorAll('.code')).reduce((str,it)=>str+it.innerText+'\n','')
+      }
+    });
+    clip.on('success', function(e) {
+      e.trigger.setAttribute('aria-label', "复制成功！");
+      e.clearSelection();
+    })
+  })
+  </script>
+
+
+<script src="/js/main.js"></script>
+
+<!-- search -->
+
+<!-- Baidu Analytics -->
+
+  <script type="text/javascript">
+        var _hmt = _hmt || [];
+        (function() {
+          var hm = document.createElement("script");
+          hm.src = "https://hm.baidu.com/hm.js?d3c8edb388553a2084296cbfe9a0785a";
+          var s = document.getElementsByTagName("script")[0];
+          s.parentNode.insertBefore(hm, s);
+        })();
+        </script>
+
+<!-- Cloudflare Analytics -->
+
+<!-- Disqus Comments -->
+
+<!-- utterances Comments -->
+
+    <script type="text/javascript">
+      var utterances_repo = 'haifuns/haifuns.github.io';
+      var utterances_issue_term = 'pathname';
+      var utterances_label = 'Comment';
+      var utterances_theme = 'github-light';
+
+      (function(){
+          var script = document.createElement('script');
+
+          script.src = 'https://utteranc.es/client.js';
+          script.setAttribute('repo', utterances_repo);
+          script.setAttribute('issue-term', 'pathname');
+          script.setAttribute('label', utterances_label);
+          script.setAttribute('theme', utterances_theme);
+          script.setAttribute('crossorigin', 'anonymous');
+          script.async = true;
+          (document.getElementById('utterances_thread')).appendChild(script);
+      }());
+  </script>
+
+</body>
+</html>
